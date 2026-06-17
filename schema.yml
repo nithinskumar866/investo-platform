@@ -1,0 +1,2152 @@
+openapi: 3.0.3
+info:
+  title: Investo API
+  version: 2.0.0
+  description: Startup Ecosystem Platform API - Connect entrepreneurs, investors,
+    mentors, and talent.
+paths:
+  /api/v1/auth/forgot-password/:
+    post:
+      operationId: auth_forgot_password_create
+      summary: Request password reset OTP
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequestRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/auth/login/:
+    post:
+      operationId: auth_login_create
+      description: |-
+        Custom login that returns JWT tokens.
+
+        Why custom instead of simplejwt's built-in TokenObtainPairView:
+        We want:
+        - Custom response format (wrapped in status/data envelope)
+        - Logging of successful/failed login attempts
+        - Update last_login_at and last_login_ip
+        - Return user data alongside tokens (saves a separate /me call)
+
+        Why username=email in kwargs:
+        Our User model uses email as USERNAME_FIELD, but authenticate()
+        still expects the 'username' kwarg regardless of the field name.
+      summary: Login with email and password
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenObtainRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenObtainRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenObtainRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/auth/logout/:
+    post:
+      operationId: auth_logout_create
+      description: |-
+        Invalidate refresh token.
+
+        Blacklists the refresh token so it cannot be used again.
+        The access token remains valid until its 15-minute expiry.
+        This is a deliberate trade-off — short-lived access tokens
+        minimize the damage from not being able to instantly revoke them.
+      summary: Logout and blacklist refresh token
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh:
+                  type: string
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/auth/me/:
+    get:
+      operationId: auth_me_retrieve
+      summary: Get or update current user profile
+      tags:
+      - Profile
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    patch:
+      operationId: auth_me_partial_update
+      summary: Get or update current user profile
+      tags:
+      - Profile
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/auth/profile/entrepreneur/:
+    get:
+      operationId: auth_profile_entrepreneur_retrieve
+      summary: Get or update entrepreneur profile
+      tags:
+      - Profile
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    patch:
+      operationId: auth_profile_entrepreneur_partial_update
+      summary: Get or update entrepreneur profile
+      tags:
+      - Profile
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/auth/profile/investor/:
+    get:
+      operationId: auth_profile_investor_retrieve
+      summary: Get or update investor profile
+      tags:
+      - Profile
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    patch:
+      operationId: auth_profile_investor_partial_update
+      summary: Get or update investor profile
+      tags:
+      - Profile
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/auth/refresh/:
+    post:
+      operationId: auth_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+        required: true
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/v1/auth/register/:
+    post:
+      operationId: auth_register_create
+      description: |-
+        User registration endpoint.
+
+        Why a function-based view (not ViewSet):
+        Registration is a single action with custom response logic
+        (returns JWT tokens alongside user data). A ViewSet would
+        require overriding create() anyway — FBV is simpler here.
+
+        Workflow:
+        1. Validate input via RegistrationSerializer
+        2. Create user
+        3. Trigger async email verification (Celery)
+        4. Generate JWT tokens so user is immediately authenticated
+        5. Return user data + tokens
+      summary: Register a new user
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistrationRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RegistrationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RegistrationRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Registration'
+          description: ''
+  /api/v1/auth/resend-verification/:
+    post:
+      operationId: auth_resend_verification_create
+      summary: Resend verification email
+      tags:
+      - Authentication
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/auth/reset-password/:
+    post:
+      operationId: auth_reset_password_create
+      summary: Reset password with OTP
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirmRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirmRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirmRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/auth/verify-email/:
+    post:
+      operationId: auth_verify_email_create
+      summary: Verify email with OTP
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailVerificationRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EmailVerificationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EmailVerificationRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/health/:
+    get:
+      operationId: health_retrieve
+      description: Returns service health status including database and cache connectivity.
+      summary: Health check endpoint
+      tags:
+      - System
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/matching/analytics/:
+    get:
+      operationId: matching_analytics_retrieve
+      summary: Get match analytics (admin only)
+      tags:
+      - Matching
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/matching/history/:
+    get:
+      operationId: matching_history_retrieve
+      summary: Get interaction history for the current user
+      tags:
+      - Matching
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/matching/interact/:
+    post:
+      operationId: matching_interact_create
+      summary: Record an interaction event (view, bookmark, ignore, contact)
+      tags:
+      - Matching
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/matching/matches/:
+    get:
+      operationId: matching_matches_retrieve
+      summary: Get match recommendations for the current investor
+      tags:
+      - Matching
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/matching/matches/{startup_id}/:
+    get:
+      operationId: matching_detail_retrieve
+      summary: Get detailed match information for a specific startup
+      parameters:
+      - in: path
+        name: startup_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Matching
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/matching/preferences/:
+    get:
+      operationId: matching_preferences_retrieve
+      summary: Get or update investor preferences
+      tags:
+      - Matching
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    patch:
+      operationId: matching_preferences_partial_update
+      summary: Get or update investor preferences
+      tags:
+      - Matching
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/matching/recommended/:
+    get:
+      operationId: matching_recommended_retrieve
+      summary: Get recommended startups for the current investor (alias for my-matches)
+      tags:
+      - Matching
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/notifications/:
+    get:
+      operationId: notifications_retrieve
+      summary: List notifications for the current user
+      tags:
+      - Notifications
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/notifications/{id}/read/:
+    patch:
+      operationId: notifications_read_partial_update
+      summary: Mark a notification as read
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Notifications
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/notifications/mark-all-read/:
+    post:
+      operationId: notifications_mark_all_read_create
+      summary: Mark all notifications as read
+      tags:
+      - Notifications
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/notifications/unread-count/:
+    get:
+      operationId: notifications_unread_count_retrieve
+      summary: Get unread notification count
+      tags:
+      - Notifications
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/startups/startups/:
+    get:
+      operationId: startups_startups_list
+      summary: List startups with filtering and search
+      parameters:
+      - in: query
+        name: business_model
+        schema:
+          type: string
+          enum:
+          - advertising
+          - b2b
+          - b2b2c
+          - b2c
+          - freemium
+          - hardware
+          - marketplace
+          - other
+          - subscription
+        description: |-
+          * `b2b` - B2B
+          * `b2c` - B2C
+          * `b2b2c` - B2B2C
+          * `marketplace` - Marketplace
+          * `subscription` - Subscription
+          * `freemium` - Freemium
+          * `advertising` - Advertising
+          * `hardware` - Hardware
+          * `other` - Other
+      - in: query
+        name: created_after
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: created_before
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: industry
+        schema:
+          type: string
+      - in: query
+        name: is_verified
+        schema:
+          type: boolean
+      - in: query
+        name: location
+        schema:
+          type: string
+      - in: query
+        name: max_equity
+        schema:
+          type: number
+      - in: query
+        name: max_funding_goal
+        schema:
+          type: number
+      - in: query
+        name: max_team_size
+        schema:
+          type: integer
+      - in: query
+        name: max_valuation
+        schema:
+          type: number
+      - in: query
+        name: min_equity
+        schema:
+          type: number
+      - in: query
+        name: min_funding_goal
+        schema:
+          type: number
+      - in: query
+        name: min_team_size
+        schema:
+          type: integer
+      - in: query
+        name: min_valuation
+        schema:
+          type: number
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: per_page
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: stage
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+      tags:
+      - Startups
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedStartupListList'
+          description: ''
+    post:
+      operationId: startups_startups_create
+      summary: Create a new startup
+      tags:
+      - Startups
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartupCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StartupCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StartupCreateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StartupCreate'
+          description: ''
+  /api/v1/startups/startups/{id}/:
+    get:
+      operationId: startups_startups_retrieve
+      summary: Get startup details
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Startup.
+        required: true
+      tags:
+      - Startups
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StartupDetail'
+          description: ''
+    put:
+      operationId: startups_startups_update
+      summary: Full update a startup
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Startup.
+        required: true
+      tags:
+      - Startups
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartupCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StartupCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StartupCreateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StartupCreate'
+          description: ''
+    patch:
+      operationId: startups_startups_partial_update
+      summary: Partial update a startup
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Startup.
+        required: true
+      tags:
+      - Startups
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedStartupCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedStartupCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedStartupCreateRequest'
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StartupCreate'
+          description: ''
+    delete:
+      operationId: startups_startups_destroy
+      summary: Delete a startup
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Startup.
+        required: true
+      tags:
+      - Startups
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/startups/startups/{id}/bookmark/:
+    post:
+      operationId: startups_startups_bookmark_create
+      summary: Bookmark or unbookmark a startup
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Startup.
+        required: true
+      tags:
+      - Startups
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartupDetailRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StartupDetailRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StartupDetailRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StartupDetail'
+          description: ''
+    delete:
+      operationId: startups_startups_bookmark_destroy
+      summary: Bookmark or unbookmark a startup
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Startup.
+        required: true
+      tags:
+      - Startups
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api/v1/startups/startups/{id}/documents/:
+    get:
+      operationId: startups_startups_documents_retrieve
+      summary: List documents for this startup
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Startup.
+        required: true
+      tags:
+      - Startups
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StartupDetail'
+          description: ''
+  /api/v1/startups/startups/{id}/documents/{doc_id}/:
+    delete:
+      operationId: startups_startups_documents_destroy
+      summary: Delete a document from this startup
+      parameters:
+      - in: path
+        name: doc_id
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Startup.
+        required: true
+      tags:
+      - Startups
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api/v1/startups/startups/{id}/recommended_investors/:
+    get:
+      operationId: startups_startups_recommended_investors_retrieve
+      summary: List recommended investors for this startup
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Startup.
+        required: true
+      tags:
+      - Startups
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StartupDetail'
+          description: ''
+  /api/v1/startups/startups/{id}/submit/:
+    post:
+      operationId: startups_startups_submit_create
+      summary: Submit startup for review (change status to active)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Startup.
+        required: true
+      tags:
+      - Startups
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartupDetailRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StartupDetailRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StartupDetailRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StartupDetail'
+          description: ''
+  /api/v1/startups/startups/{id}/upload_document/:
+    post:
+      operationId: startups_startups_upload_document_create
+      summary: Upload a document for this startup
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Startup.
+        required: true
+      tags:
+      - Startups
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StartupDetail'
+          description: ''
+  /api/v1/startups/startups/{id}/verify/:
+    post:
+      operationId: startups_startups_verify_create
+      summary: Verify a startup (admin)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Startup.
+        required: true
+      tags:
+      - Startups
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartupDetailRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StartupDetailRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StartupDetailRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StartupDetail'
+          description: ''
+  /api/v1/startups/startups/statistics/:
+    get:
+      operationId: startups_startups_statistics_retrieve
+      summary: Get startup statistics (admin)
+      tags:
+      - Startups
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StartupDetail'
+          description: ''
+components:
+  schemas:
+    BlankEnum:
+      enum:
+      - ''
+    BusinessModelEnum:
+      enum:
+      - b2b
+      - b2c
+      - b2b2c
+      - marketplace
+      - subscription
+      - freemium
+      - advertising
+      - hardware
+      - other
+      type: string
+      description: |-
+        * `b2b` - B2B
+        * `b2c` - B2C
+        * `b2b2c` - B2B2C
+        * `marketplace` - Marketplace
+        * `subscription` - Subscription
+        * `freemium` - Freemium
+        * `advertising` - Advertising
+        * `hardware` - Hardware
+        * `other` - Other
+    DocumentTypeEnum:
+      enum:
+      - pitch_deck
+      - business_plan
+      - financial_model
+      - market_analysis
+      - term_sheet
+      - other
+      type: string
+      description: |-
+        * `pitch_deck` - Pitch Deck
+        * `business_plan` - Business Plan
+        * `financial_model` - Financial Model
+        * `market_analysis` - Market Analysis
+        * `term_sheet` - Term Sheet
+        * `other` - Other
+    EmailVerificationRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+        otp:
+          type: string
+          minLength: 1
+          maxLength: 6
+      required:
+      - email
+      - otp
+    IndustryEnum:
+      enum:
+      - ai_ml
+      - fintech
+      - healthtech
+      - edtech
+      - saas
+      - ecommerce
+      - marketplace
+      - social
+      - gaming
+      - cleantech
+      - biotech
+      - blockchain
+      - real_estate
+      - transport
+      - food_tech
+      - travel
+      - cybersecurity
+      - iot
+      - media
+      - other
+      type: string
+      description: |-
+        * `ai_ml` - Artificial Intelligence / ML
+        * `fintech` - Fintech
+        * `healthtech` - Healthtech
+        * `edtech` - Edtech
+        * `saas` - SaaS / Cloud
+        * `ecommerce` - E-commerce
+        * `marketplace` - Marketplace
+        * `social` - Social Media
+        * `gaming` - Gaming
+        * `cleantech` - Cleantech
+        * `biotech` - Biotech
+        * `blockchain` - Blockchain / Web3
+        * `real_estate` - Real Estate / PropTech
+        * `transport` - Transport / Mobility
+        * `food_tech` - Food Tech
+        * `travel` - Travel / Hospitality
+        * `cybersecurity` - Cybersecurity
+        * `iot` - IoT / Hardware
+        * `media` - Media / Entertainment
+        * `other` - Other
+    PaginatedStartupListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/StartupList'
+    PasswordResetConfirmRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+        otp:
+          type: string
+          minLength: 1
+          maxLength: 6
+        password:
+          type: string
+          writeOnly: true
+          minLength: 8
+        confirm_password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - confirm_password
+      - email
+      - otp
+      - password
+    PasswordResetRequestRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+      required:
+      - email
+    PatchedStartupCreateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        tagline:
+          type: string
+          maxLength: 500
+        description:
+          type: string
+        industry:
+          $ref: '#/components/schemas/IndustryEnum'
+        stage:
+          $ref: '#/components/schemas/StageEnum'
+        business_model:
+          oneOf:
+          - $ref: '#/components/schemas/BusinessModelEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        funding_goal:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        min_funding:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        max_funding:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        equity_offered:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        valuation:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        currency:
+          type: string
+          minLength: 1
+          maxLength: 3
+        location:
+          type: string
+          maxLength: 255
+        website:
+          type: string
+          format: uri
+          maxLength: 200
+        logo:
+          type: string
+          format: binary
+          nullable: true
+        pitch_deck:
+          type: string
+          format: binary
+          nullable: true
+        founded_date:
+          type: string
+          format: date
+          nullable: true
+        team_size:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        is_visible:
+          type: boolean
+        team_members:
+          type: array
+          items:
+            $ref: '#/components/schemas/StartupTeamMemberRequest'
+        social_links:
+          type: array
+          items:
+            $ref: '#/components/schemas/StartupSocialLinkRequest'
+        metrics:
+          $ref: '#/components/schemas/StartupMetricRequest'
+    PlatformEnum:
+      enum:
+      - linkedin
+      - twitter
+      - crunchbase
+      - angel_list
+      - github
+      - youtube
+      - product_hunt
+      - other
+      type: string
+      description: |-
+        * `linkedin` - LinkedIn
+        * `twitter` - Twitter / X
+        * `crunchbase` - Crunchbase
+        * `angel_list` - AngelList / Wellfound
+        * `github` - GitHub
+        * `youtube` - YouTube
+        * `product_hunt` - Product Hunt
+        * `other` - Other
+    Registration:
+      type: object
+      description: |-
+        Handles user registration with validation.
+
+        Why not a ModelForm:
+        We use DRF serializers to maintain consistency with the API-first
+        architecture. This serializer is used by the API view and can also
+        be used by templates — same code path.
+
+        Design decisions:
+        - password is write_only: never returned in responses
+        - password uses PasswordInput-equivalent via style
+        - role is required: every user must choose their role at signup
+        - email is lowercased: prevents duplicate accounts with case variants
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        phone:
+          type: string
+          maxLength: 20
+      required:
+      - email
+    RegistrationRequest:
+      type: object
+      description: |-
+        Handles user registration with validation.
+
+        Why not a ModelForm:
+        We use DRF serializers to maintain consistency with the API-first
+        architecture. This serializer is used by the API view and can also
+        be used by templates — same code path.
+
+        Design decisions:
+        - password is write_only: never returned in responses
+        - password uses PasswordInput-equivalent via style
+        - role is required: every user must choose their role at signup
+        - email is lowercased: prevents duplicate accounts with case variants
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+        password:
+          type: string
+          writeOnly: true
+          minLength: 8
+        confirm_password:
+          type: string
+          writeOnly: true
+          minLength: 1
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        phone:
+          type: string
+          maxLength: 20
+      required:
+      - confirm_password
+      - email
+      - password
+    RoleEnum:
+      enum:
+      - entrepreneur
+      - investor
+      - mentor
+      - talent
+      - admin
+      type: string
+      description: |-
+        * `entrepreneur` - Entrepreneur
+        * `investor` - Investor
+        * `mentor` - Mentor
+        * `talent` - Talent
+        * `admin` - Admin
+    StageEnum:
+      enum:
+      - idea
+      - pre_seed
+      - seed
+      - series_a
+      - series_b
+      - series_c
+      - growth
+      type: string
+      description: |-
+        * `idea` - Idea / Concept
+        * `pre_seed` - Pre-Seed
+        * `seed` - Seed
+        * `series_a` - Series A
+        * `series_b` - Series B
+        * `series_c` - Series C+
+        * `growth` - Growth Stage
+    StartupCreate:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        tagline:
+          type: string
+          maxLength: 500
+        description:
+          type: string
+        industry:
+          $ref: '#/components/schemas/IndustryEnum'
+        stage:
+          $ref: '#/components/schemas/StageEnum'
+        business_model:
+          oneOf:
+          - $ref: '#/components/schemas/BusinessModelEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        funding_goal:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        min_funding:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        max_funding:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        equity_offered:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        valuation:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        currency:
+          type: string
+          maxLength: 3
+        location:
+          type: string
+          maxLength: 255
+        website:
+          type: string
+          format: uri
+          maxLength: 200
+        logo:
+          type: string
+          format: uri
+          nullable: true
+        pitch_deck:
+          type: string
+          format: uri
+          nullable: true
+        founded_date:
+          type: string
+          format: date
+          nullable: true
+        team_size:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        is_visible:
+          type: boolean
+        team_members:
+          type: array
+          items:
+            $ref: '#/components/schemas/StartupTeamMember'
+        social_links:
+          type: array
+          items:
+            $ref: '#/components/schemas/StartupSocialLink'
+        metrics:
+          $ref: '#/components/schemas/StartupMetric'
+      required:
+      - industry
+      - name
+      - stage
+    StartupCreateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        tagline:
+          type: string
+          maxLength: 500
+        description:
+          type: string
+        industry:
+          $ref: '#/components/schemas/IndustryEnum'
+        stage:
+          $ref: '#/components/schemas/StageEnum'
+        business_model:
+          oneOf:
+          - $ref: '#/components/schemas/BusinessModelEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        funding_goal:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        min_funding:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        max_funding:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        equity_offered:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        valuation:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        currency:
+          type: string
+          minLength: 1
+          maxLength: 3
+        location:
+          type: string
+          maxLength: 255
+        website:
+          type: string
+          format: uri
+          maxLength: 200
+        logo:
+          type: string
+          format: binary
+          nullable: true
+        pitch_deck:
+          type: string
+          format: binary
+          nullable: true
+        founded_date:
+          type: string
+          format: date
+          nullable: true
+        team_size:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        is_visible:
+          type: boolean
+        team_members:
+          type: array
+          items:
+            $ref: '#/components/schemas/StartupTeamMemberRequest'
+        social_links:
+          type: array
+          items:
+            $ref: '#/components/schemas/StartupSocialLinkRequest'
+        metrics:
+          $ref: '#/components/schemas/StartupMetricRequest'
+      required:
+      - industry
+      - name
+      - stage
+    StartupDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        tagline:
+          type: string
+          maxLength: 500
+        description:
+          type: string
+        industry:
+          $ref: '#/components/schemas/IndustryEnum'
+        stage:
+          $ref: '#/components/schemas/StageEnum'
+        business_model:
+          oneOf:
+          - $ref: '#/components/schemas/BusinessModelEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        funding_goal:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        min_funding:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        max_funding:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        equity_offered:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        valuation:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        currency:
+          type: string
+          maxLength: 3
+        location:
+          type: string
+          maxLength: 255
+        website:
+          type: string
+          format: uri
+          maxLength: 200
+        logo:
+          type: string
+          format: uri
+          nullable: true
+        pitch_deck:
+          type: string
+          format: uri
+          nullable: true
+        founded_date:
+          type: string
+          format: date
+          nullable: true
+        team_size:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        is_verified:
+          type: boolean
+          readOnly: true
+        is_visible:
+          type: boolean
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+        view_count:
+          type: integer
+          readOnly: true
+        bookmark_count:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        owner_name:
+          type: string
+          readOnly: true
+        team_members:
+          type: array
+          items:
+            $ref: '#/components/schemas/StartupTeamMember'
+          readOnly: true
+        social_links:
+          type: array
+          items:
+            $ref: '#/components/schemas/StartupSocialLink'
+          readOnly: true
+        documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/StartupDocument'
+          readOnly: true
+        funding_rounds:
+          type: array
+          items:
+            $ref: '#/components/schemas/StartupFundingRound'
+          readOnly: true
+        metrics:
+          allOf:
+          - $ref: '#/components/schemas/StartupMetric'
+          readOnly: true
+      required:
+      - bookmark_count
+      - created_at
+      - documents
+      - funding_rounds
+      - id
+      - industry
+      - is_verified
+      - metrics
+      - name
+      - owner_name
+      - social_links
+      - stage
+      - team_members
+      - updated_at
+      - view_count
+    StartupDetailRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        tagline:
+          type: string
+          maxLength: 500
+        description:
+          type: string
+        industry:
+          $ref: '#/components/schemas/IndustryEnum'
+        stage:
+          $ref: '#/components/schemas/StageEnum'
+        business_model:
+          oneOf:
+          - $ref: '#/components/schemas/BusinessModelEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        funding_goal:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        min_funding:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        max_funding:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        equity_offered:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        valuation:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        currency:
+          type: string
+          minLength: 1
+          maxLength: 3
+        location:
+          type: string
+          maxLength: 255
+        website:
+          type: string
+          format: uri
+          maxLength: 200
+        logo:
+          type: string
+          format: binary
+          nullable: true
+        pitch_deck:
+          type: string
+          format: binary
+          nullable: true
+        founded_date:
+          type: string
+          format: date
+          nullable: true
+        team_size:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        is_visible:
+          type: boolean
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+      required:
+      - industry
+      - name
+      - stage
+    StartupDocument:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        file:
+          type: string
+          format: uri
+        document_type:
+          $ref: '#/components/schemas/DocumentTypeEnum'
+        uploaded_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - file
+      - id
+      - name
+      - uploaded_at
+    StartupDocumentRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        file:
+          type: string
+          format: binary
+        document_type:
+          $ref: '#/components/schemas/DocumentTypeEnum'
+      required:
+      - file
+      - name
+    StartupFundingRound:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        round_name:
+          type: string
+          maxLength: 255
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+        date:
+          type: string
+          format: date
+        investors:
+          type: string
+        valuation:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        notes:
+          type: string
+      required:
+      - amount
+      - date
+      - id
+      - round_name
+    StartupFundingRoundRequest:
+      type: object
+      properties:
+        round_name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+        date:
+          type: string
+          format: date
+        investors:
+          type: string
+        valuation:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        notes:
+          type: string
+      required:
+      - amount
+      - date
+      - round_name
+    StartupList:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        tagline:
+          type: string
+          maxLength: 500
+        industry:
+          $ref: '#/components/schemas/IndustryEnum'
+        stage:
+          $ref: '#/components/schemas/StageEnum'
+        funding_goal:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        equity_offered:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        location:
+          type: string
+          maxLength: 255
+        logo:
+          type: string
+          format: uri
+          nullable: true
+        team_size:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        is_verified:
+          type: boolean
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+        view_count:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        bookmark_count:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        owner_name:
+          type: string
+          readOnly: true
+        match_score:
+          type: number
+          format: double
+          nullable: true
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - industry
+      - match_score
+      - name
+      - owner_name
+      - stage
+    StartupMetric:
+      type: object
+      properties:
+        monthly_revenue:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        annual_revenue:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        revenue_growth_pct:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        monthly_active_users:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        total_users:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        gross_margin_pct:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        burn_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        runway_months:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        traction_description:
+          type: string
+        key_achievements: {}
+    StartupMetricRequest:
+      type: object
+      properties:
+        monthly_revenue:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        annual_revenue:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        revenue_growth_pct:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        monthly_active_users:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        total_users:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        gross_margin_pct:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        burn_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        runway_months:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        traction_description:
+          type: string
+        key_achievements: {}
+    StartupSocialLink:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        platform:
+          $ref: '#/components/schemas/PlatformEnum'
+        url:
+          type: string
+          format: uri
+          maxLength: 200
+      required:
+      - id
+      - platform
+      - url
+    StartupSocialLinkRequest:
+      type: object
+      properties:
+        platform:
+          $ref: '#/components/schemas/PlatformEnum'
+        url:
+          type: string
+          format: uri
+          minLength: 1
+          maxLength: 200
+      required:
+      - platform
+      - url
+    StartupTeamMember:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        role:
+          type: string
+          maxLength: 255
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        linkedin_url:
+          type: string
+          format: uri
+          maxLength: 200
+        photo:
+          type: string
+          format: uri
+          nullable: true
+        bio:
+          type: string
+        is_founder:
+          type: boolean
+        order:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+      required:
+      - id
+      - name
+      - role
+    StartupTeamMemberRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        role:
+          type: string
+          minLength: 1
+          maxLength: 255
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        linkedin_url:
+          type: string
+          format: uri
+          maxLength: 200
+        photo:
+          type: string
+          format: binary
+          nullable: true
+        bio:
+          type: string
+        is_founder:
+          type: boolean
+        order:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+      required:
+      - name
+      - role
+    StatusEnum:
+      enum:
+      - draft
+      - active
+      - funded
+      - closed
+      type: string
+      description: |-
+        * `draft` - Draft
+        * `active` - Active
+        * `funded` - Funded
+        * `closed` - Closed
+    TokenObtainRequest:
+      type: object
+      description: |-
+        Custom JWT token serializer that accepts email as username.
+
+        Why custom:
+        DRF simplejwt's default serializer expects a 'username' field.
+        Our User model uses email as USERNAME_FIELD, but we want the
+        API to be explicit about accepting 'email' not 'username'.
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - email
+      - password
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+      required:
+      - access
+      - refresh
+    TokenRefreshRequest:
+      type: object
+      properties:
+        refresh:
+          type: string
+          minLength: 1
+      required:
+      - refresh
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entrepreneur Platform</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'ideas/style.css' %}">
+    <script src="{% static 'script.js' %}" defer></script>
+</head>
+<body>
+    <header>
+        <h1>Entrepreneur Platform</h1>
+        <nav>
+            <a href="{% url 'register' %}" onclick="loadPage('register.html')">Register Idea</a>
+            <a href="{% url 'chatbot' %}" onclick="loadPage('chatbot.html')">AI Chatbot</a>
+            <a href="{% url 'study' %}" onclick="loadPage('study.html')">Study</a>
+            <a href="{% url 'mentors'%}" onclick="loadPage('mentors.html')">Mentors</a>
+            <a href="{% url 'investor'%}" onclick="loadPage('investor.html')">Investors</a>
+        </nav>
+    </header>
+
+    <main id="content">
+    </main>
+</body>
+</html>

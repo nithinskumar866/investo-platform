@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block title %}Study Resources{% endblock %}
+
+{% block content %}
+<section>
+    <style>
+
+        .container {
+            text-align: center;
+            width: 80%;
+            max-width: 600px;
+            margin: 2rem auto;
+        }
+
+        details {
+            border: 1px solid #8b4513;
+            border-radius: 5px;
+            margin: 1rem 0;
+            padding: 0.5rem;
+            background-color: #8b4513;
+        }
+
+        details summary {
+            cursor: pointer;
+            font-weight: bold;
+            list-style: none;
+            padding: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        details summary::after {
+            content: '\25BC'; /* Down arrow */
+            font-size: 1.1rem;
+            transition: transform 0.3s;
+        }
+
+        details[open] summary::after {
+            transform: rotate(-180deg); /* Up arrow */
+        }
+
+        details[open] summary {
+            background-color: #8b4513;
+        }
+
+        details .content {
+            padding: 0.5rem;
+            margin-top: 0.5rem;
+            border-top: 1px solid white;
+            background-color: white;
+            border-radius: 5px;
+        }
+
+        details .content p{
+            color: #000;
+            font-style: bold;
+        }
+
+        details summary {
+            color: white;
+        }
+    </style>
+    <h2>Study Resources</h2>
+    <p>Access a variety of resources to learn about starting and running a business.</p>
+    <div>
+
+    </div>
+
+    <div id="studyResources">
+        {% for video in videos %}
+        <div class="video-card">
+            <video controls>
+                <source src="{{ video.video_source }}" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+            <p>{{ video.title }}</p>
+        </div>
+        {% endfor %}
+    </div>
+    
+        <div class="container">
+            <h1>Business Studies Syllabus from Harvard</h1>
+            <details>
+                <summary>Leadership and Organizational Behavior (LEAD)</summary>
+                <div class="content">
+                    <p>The determinants of group culture</p>
+                    <p>Managing the performance of individual subordinates</p>
+                    <p>Establishing productive relationships with peers and seniors</p>
+                    <p>Develop a vision of the future.</p>
+                    <p>Align the organization behind that vision.</p>
+                    <p>Motivate people to achieve the vision.</p>
+                </div>
+            </details>
+            
+            <details>
+                <summary>Finance I</summary>
+                <div class="content">
+                    <p>Basic analytical skills and principles of corporate finance</p>
+                    <p>Functions of modern capital markets and financial institutions</p>
+                    <p>Standard techniques of analysis, capital budgeting, discounted cash flow valuation, and risk analysis</p>
+                </div>
+            </details>
+            <details>
+                <summary>Finance II</summary>
+                <div class="content">
+                    <p>Leadership and Corporate Accountability (LCA)</p>
+                    <p>FIELD Global Immersion (FGI)</p>
+                    <p>Social Purpose of the Firm (SPF)</p>
+                </div>
+            </details>
+        </div>
+</section>
+    
+{% endblock %}

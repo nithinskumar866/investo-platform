@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Messages{% endblock %}</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'ideas/style.css' %}">
+    <style>
+    header .back-arrow {
+    position: absolute; /* Change from fixed to absolute */
+    top: 20px;
+    left: 20px;
+    display: inline-block;
+    width: 70px;
+    height: 70px;
+    line-height: 60px; /* Adjust line-height for better alignment */
+    text-align: center; /* Center the arrow symbol */
+    text-decoration: none;
+    color: white;
+    background-color:#8b4513;
+    border: 2px solid #8b4513;
+    border-radius: 50%;
+    font-size: 55px;
+    border-radius: 8px; 
+    font-weight: bold;
+    
+}
+
+header .back-arrow:hover {
+    background-color: white;
+    color: #8b4513;
+}
+ </style>
+</head>
+<body>
+    {% block content %}
+    <header>
+        <a href="{% url 'back' %}" class="back-arrow">&larr;</a>
+        <h1>Messages</h1>
+    </header>
+    <div class="container">
+        <h2>Chat with {{ recipient.name }}</h2>
+        <div class="chat-box">
+            {% for message in messages %}
+                <div class="message {% if message.sender.email == recipient.email %}receiver{% else %}sender{% endif %}">
+                    <p><strong>{{ message.sender.name }}:</strong> {{ message.content }}</p>
+                    <p class="timestamp">{{ message.timestamp|date:"H:i" }}</p>
+                </div>
+            {% empty %}
+                <p>No messages yet.</p>
+            {% endfor %}
+        </div>
+        <form method="post" action="">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit">Send</button>
+        </form>
+    </div>
+    {% endblock %}
+</body>
+</html>

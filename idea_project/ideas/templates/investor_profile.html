@@ -1,0 +1,24 @@
+{% extends 'base2.html' %}
+
+{% block title %}Edit Investor Profile{% endblock %}
+
+{% block content %}
+<h2>Edit Your Profile</h2>
+<form method="POST">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Save Changes</button>
+</form>
+{% if form.errors %}
+    <div class="errors">
+        {% for field in form %}
+            {% for error in field.errors %}
+                <p>{{ error }}</p>
+            {% endfor %}
+        {% endfor %}
+        {% for error in form.non_field_errors %}
+            <p>{{ error }}</p>
+        {% endfor %}
+    </div>
+{% endif %}
+{% endblock %}

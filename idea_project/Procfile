@@ -1,0 +1,1 @@
+web gunicorn idea_project.wsgi:application 

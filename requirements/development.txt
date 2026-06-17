@@ -1,0 +1,23 @@
+-r base.txt
+
+# Testing
+pytest==8.3.2
+pytest-django==4.8.0
+pytest-cov==5.0.0
+pytest-asyncio==0.23.8
+factory-boy==3.3.0
+faker==26.0.1
+
+# Code Quality
+ruff==0.5.0
+mypy==1.10.1
+
+# Django type stubs for mypy
+django-stubs==5.0.4
+djangorestframework-stubs==3.15.2
+
+# API Docs
+drf-spectacular==0.29.0
+
+# Debug
+django-debug-toolbar==4.4.6

@@ -1,0 +1,77 @@
+{% extends 'base2.html' %}
+
+{% block title %}AI Chatbot{% endblock %}
+
+{% block content %}
+<body>
+    <h1 style="text-align: center;">AI Integration with Gemini</h1>
+    <form id="chatbot-form">
+        <label for="input_data"><strong>Investo Bot</strong></label>
+        <input type="text" id="input_data" name="input_data" required placeholder="Ask me anything">
+        <button type="submit">Submit</button>
+    </form>
+    <div id="response-section" style="display: none;">
+        <h2>AI Response:</h2>
+        <p id="ai-response"></p>
+    </div>
+    <script type="importmap">
+        {
+          "imports": {
+            "@google/generative-ai": "https://esm.run/@google/generative-ai"
+          }
+        }
+    </script>
+    <script type="module">
+        import { GoogleGenerativeAI } from "@google/generative-ai";
+        
+        document.getElementById('chatbot-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const input_data = document.getElementById('input_data').value;
+        // Fetch your API_KEY
+        const API_KEY = "AIzaSyCj-efh7Sin7ucfX8FOdDZrQqKGLadI-kY";
+        
+        // Access your API key (see "Set up your API key" above)
+        const genAI = new GoogleGenerativeAI(API_KEY)
+
+        async function run() {
+
+        const largeParagraph = `
+                You are the AI assistant for Investo, a platform designed to connect investors and entrepreneurs. 
+                Your role is to help users navigate and answer questions about the platform. 
+                Investo has a study section and an AI chatbot to solve users' doubts. The website's complete use is for business and deals with the start and end of a user's journey as an entrepreneur and investor.
+                The first thing to do on the website is to log in and select whether you are an investor or an entrepreneur. 
+                If you choose the entrepreneur side, you need to register your idea, select a tag indicating the domain the project falls into, and submit the idea. 
+                On the investor side, you need to set up your profile, stating which domain you are interested in by selecting a tag. 
+                Entrepreneurs with similar tags to those selected by investors will be displayed in the message section, allowing investors to message the entrepreneurs. 
+                This facilitates connections between entrepreneurs and investors. If you don't know the answer to a question, you can state any answer of your choice using your intelligence.
+                Here is a question for you:
+
+        `;
+
+            // Append user input to the large paragraph
+        const fullResponse = `${largeParagraph}\nUser input: ${input_data}`;
+
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash"});
+
+        const result = await model.generateContent(fullResponse);
+
+        const response = await result.response;
+        
+        const text = response.text();
+
+        
+        const responseSection = document.getElementById('response-section');
+
+        responseSection.style.display = 'block';
+
+        const AiResponse = document.getElementById('ai-response');
+
+        AiResponse.textContent = text;
+}
+
+run()});
+    </script>
+    
+</body>
+{% endblock %}

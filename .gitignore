@@ -1,0 +1,74 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.venv/
+env/
+venv/
+pip-wheel-metadata/
+
+# Django
+*.db
+*.sqlite3
+staticfiles/
+media/
+media/uploads/
+*.pot
+
+# Environment
+.env
+.env.local
+.env.production
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.override.yml
+
+# Logs
+*.log
+logs/
+
+# Coverage
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+
+# Type checking
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# Database
+postgresql/data/
+redis/data/
+
+# Node (future frontend)
+node_modules/
+frontend/dist/
+frontend/.next/
+
+# Test artifacts
+.tmp/
+.temp/
+
+# Secrets
+*.pem
+*.key
+*.crt
+*.p12

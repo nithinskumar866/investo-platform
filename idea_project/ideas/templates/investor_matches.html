@@ -1,0 +1,26 @@
+{% extends 'base2.html' %}
+
+{% block title %}Investor Matches{% endblock %}
+
+{% block content %}
+<body>
+    <section>
+        <h2>Entrepreneurs</h2>
+        <div id="investorCards">
+            {% for entrepreneur in entrepreneurs %}
+            <div class="investor-card">
+                <h3>{{ entrepreneur.name }}</h3>
+                <p>{{ entrepreneur.tag }}</p>
+                <button class="messageBtn" onclick="redirectToMessage('{{ entrepreneur.email }}')">Message</button>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <script>
+        function redirectToMessage(email) {
+            window.location.href = `/chat/${encodeURIComponent(email)}/`;
+        }
+    </script>
+</body>
+{% endblock %}

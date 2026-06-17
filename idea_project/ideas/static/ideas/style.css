@@ -1,0 +1,358 @@
+/* myapp/static/styles.css */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #fff;
+    color: #4b2e2e;
+    margin: 0;
+    padding: 0;
+}
+
+header {
+    background-color: #8b4513;
+    color: #fff;
+    padding: 1rem;
+    text-align: center;
+}
+
+header nav a {
+    color: #fff;
+    margin: 0 1rem;
+    text-decoration: none;
+}
+
+main {
+    padding: 2rem;
+}
+
+form input,
+form textarea,
+form button {
+    display: block;
+    margin: 0.5rem 0;
+    padding: 0.5rem;
+    width: 100%;
+    max-width: 400px;
+}
+
+#chatbotInterface {
+    display: flex;
+    flex-direction: column;
+    max-width: 400px;
+}
+
+#chatMessages {
+    border: 1px solid #8b4513;
+    padding: 1rem;
+    margin-top: 1rem;
+    height: 200px;
+    overflow-y: scroll;
+}
+
+#mentorList,
+#investorCards {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+#investorCards>div {
+    background-color: #fff;
+    border: 1px solid #8b4513;
+    margin: 0.5rem;
+    padding: 1rem;
+    width: calc(33% - 1rem);
+    box-sizing: border-box;
+}
+
+#actions {
+    display: flex;
+    justify-content: center;
+    margin-top: 1rem;
+}
+
+#actions button {
+    background-color: #8b4513;
+    border: none;
+    color: #fff;
+    padding: 0.5rem 1rem;
+    margin: 0 0.5rem;
+    cursor: pointer;
+}
+
+#actions button:hover {
+    background-color: #5f331a;
+}
+
+#mentorList>div {
+    background-color: #fff;
+    border: 1px solid #8b4513;
+    margin: 0.5rem;
+    padding: 1rem;
+    width: calc(33% - 1rem);
+    box-sizing: border-box;
+}
+
+/* Additional styling for login, signup, and profile pages */
+h2 {
+    text-align: center;
+    margin-top: 2rem;
+    color: #8b4513;
+}
+
+form {
+    max-width: 400px;
+    margin: 2rem auto;
+    padding: 1rem;
+    border: 1px solid #8b4513;
+    border-radius: 4px;
+    background-color: #f9f9f9;
+}
+
+form input,
+form button {
+    display: block;
+    width: calc(100% - 2rem);
+    margin: 1rem auto;
+    padding: 0.5rem;
+    box-sizing: border-box;
+}
+
+form input {
+    border: 1px solid #8b4513;
+    border-radius: 4px;
+    padding: 0.5rem;
+}
+
+form button {
+    background-color: #8b4513;
+    color: #fff;
+    border: none;
+    padding: 0.75rem;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+form button:hover {
+    background-color: #5f331a;
+}
+
+p {
+    text-align: center;
+    margin-top: 1rem;
+}
+
+p a {
+    color: #8b4513;
+    text-decoration: none;
+}
+
+p a:hover {
+    text-decoration: underline;
+}
+
+/* Additional styling for profile page */
+.profile-container {
+    max-width: 400px;
+    margin: 2rem auto;
+    padding: 1rem;
+    border: 1px solid #8b4513;
+    border-radius: 4px;
+    background-color: #f9f9f9;
+    text-align: center;
+}
+
+.profile-container p {
+    margin: 0.5rem 0;
+}
+
+.profile-container a {
+    display: inline-block;
+    margin-top: 1rem;
+    padding: 0.5rem 1rem;
+    background-color: #8b4513;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 4px;
+}
+
+profile-container a:hover {
+    background-color: #5f331a;
+}
+
+/* Styling for the study resources section */
+#studyResources {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: center;
+}
+
+.video-card {
+    width: 300px;
+    background-color: #fff;
+    border: 1px solid #8b4513;
+    padding: 1rem;
+    box-sizing: border-box;
+    text-align: center;
+}
+
+.video-card video {
+    width: 100%;
+    height: auto;
+    border: none;
+}
+
+.video-card p {
+    margin: 0.5rem 0 0;
+    color: #4b2e2e;
+    font-size: 1rem;
+}
+
+/* Styling for the investors section */
+.investor-card {
+    background-color: #fff;
+    border: 1px solid #8b4513;
+    margin: 0.5rem;
+    padding: 1rem;
+    width: calc(33% - 1rem);
+    box-sizing: border-box;
+    text-align: center;
+}
+
+/* Add these styles to your existing styles.css */
+
+#messageContainer {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 1rem;
+    height: 300px;
+    overflow-y: auto;
+    margin-bottom: 1rem;
+    background-color: #f9f9f9;
+}
+
+#messageInput {
+    width: calc(100% - 2rem);
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+#sendButton {
+    padding: 0.5rem 1rem;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-left: 0.5rem;
+}
+
+#sendButton:hover {
+    background-color: #0056b3;
+}
+
+.message {
+    margin-bottom: 1rem;
+}
+
+.message p {
+    margin: 0;
+}
+
+.message .username {
+    font-weight: bold;
+}
+
+.message .timestamp {
+    font-size: 0.8rem;
+    color: #888;
+}
+
+form textarea {
+    display: block;
+    margin: 0.5rem 0;
+    padding: 0.5rem;
+    width: 96%;
+    max-width: 400px;
+}
+
+textarea {
+    resize: vertical;
+}
+
+select {
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    width: 100%;
+    max-width: 400px;
+    margin-bottom: 1rem;
+}
+
+/* Center the form and its contents */
+form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Center the submit button */
+form button[type="submit"] {
+    margin-top: 10px;
+    /* Adjust margin as needed */
+}
+
+/* Styling for the Study Resources section */
+/* ideas/static/ideas/style.css */
+#studyResources {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.video-card {
+    flex: 1 1 300px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.video-card video {
+    width: 100%;
+    max-width: 400px;
+    height: auto;
+}
+
+/* Specific styling for the investor profile form */
+/* Additional styling for investor profile form */
+.profile-form {
+    max-width: 600px;
+    margin: 2rem auto;
+    padding: 1rem;
+    border: 1px solid #8b4513;
+    border-radius: 4px;
+    background-color: #f9f9f9;
+}
+
+.profile-form input,
+.profile-form select,
+.profile-form button {
+    display: block;
+    margin: 0.5rem 0;
+    padding: 0.5rem;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.profile-form button {
+    background-color: #8b4513;
+    color: #fff;
+    border: none;
+    padding: 0.75rem;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.profile-form button:hover {
+    background-color: #5f331a;
+}

@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block title %}Investors{% endblock %}
+
+{% block content %}
+<body>
+    <section>
+        <h2>Investors</h2>
+        <div id="investorCards">
+            {% for investor in investors %}
+            <div class="investor-card">
+                <h3>{{ investor.name }}</h3>
+                <p>{{ investor.tag }}</p>
+                <button class="messageBtn" onclick="window.location.href='/chat/{{investor.email}}/'">Message</button>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+        
+</body>
+{% endblock %}
