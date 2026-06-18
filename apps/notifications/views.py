@@ -1,72 +1,115 @@
-import logging
 from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from drf_spectacular.utils import extend_schema
+from rest_framework.viewsets import ViewSet
 
-from .models import Notification
-from .services import NotificationService
-from .serializers import NotificationSerializer
 from apps.common.exceptions import ApplicationError
-from apps.common.permissions import IsOwner
 
-logger = logging.getLogger(__name__)
-
-
-@extend_schema(
-    tags=["Notifications"],
-    summary="List notifications for the current user",
+from .permissions import IsNotificationOwner
+from .serializers import (
+    NotificationAnalyticsSerializer,
+    NotificationCursorPaginatedResponse,
+    NotificationListSerializer,
+    NotificationPreferenceSerializer,
+    UnreadCountSerializer,
 )
-@api_view(["GET"])
-@permission_classes([IsAuthenticated])
-def notification_list(request):
-    unread_only = request.GET.get("unread_only", "false").lower() == "true"
-    limit = request.GET.get("limit")
-    try:
-        limit = min(int(limit), 100) if limit else None
-    except (ValueError, TypeError):
-        limit = None
-
-    notifications = NotificationService.get_user_notifications(
-        request.user, unread_only=unread_only, limit=limit
-    )
-    serializer = NotificationSerializer(notifications, many=True)
-    return Response({"status": "success", "data": serializer.data})
+from .services import NotificationService
 
 
-@extend_schema(
-    tags=["Notifications"],
-    summary="Get unread notification count",
-)
-@api_view(["GET"])
-@permission_classes([IsAuthenticated])
-def notification_unread_count(request):
-    count = NotificationService.get_unread_count(request.user)
-    return Response({"status": "success", "data": {"count": count}})
+class NotificationViewSet(ViewSet):
+    permission_classes = [IsAuthenticated]
 
+    def list(self, request):
+        cursor = request.query_params.get("cursor")
+        try:
+            limit = min(int(request.query_params.get("limit", 20)), 100)
+        except (ValueError, TypeError):
+            limit = 20
 
-@extend_schema(
-    tags=["Notifications"],
-    summary="Mark a notification as read",
-)
-@api_view(["PATCH"])
-@permission_classes([IsAuthenticated, IsOwner])
-def notification_mark_read(request, pk=None):
-    success = NotificationService.mark_as_read(request.user, pk)
-    if not success:
-        raise ApplicationError("Notification not found", "NOT_FOUND", 404)
-    logger.info(f"Notification {pk} marked as read by {request.user.email}")
-    return Response({"status": "success", "data": {"message": "Notification marked as read"}})
+        notifications, has_more = NotificationService.get_notifications(
+            request.user, cursor=cursor, limit=limit,
+        )
+        serializer = NotificationListSerializer(notifications, many=True)
 
+        next_cursor = None
+        if notifications:
+            next_cursor = notifications[-1].created_at.isoformat()
 
-@extend_schema(
-    tags=["Notifications"],
-    summary="Mark all notifications as read",
-)
-@api_view(["POST"])
-@permission_classes([IsAuthenticated])
-def notification_mark_all_read(request):
-    count = NotificationService.mark_all_as_read(request.user)
-    logger.info(f"All notifications marked as read for {request.user.email}")
-    return Response({"status": "success", "data": {"marked_count": count}})
+        return Response({
+            "results": serializer.data,
+            "cursor": next_cursor if has_more else None,
+            "has_more": has_more,
+        })
+
+    @action(detail=False, methods=["get"])
+    def unread(self, request):
+        cursor = request.query_params.get("cursor")
+        try:
+            limit = min(int(request.query_params.get("limit", 20)), 100)
+        except (ValueError, TypeError):
+            limit = 20
+
+        notifications, has_more = NotificationService.get_unread(
+            request.user, cursor=cursor, limit=limit,
+        )
+        serializer = NotificationListSerializer(notifications, many=True)
+
+        next_cursor = None
+        if notifications:
+            next_cursor = notifications[-1].created_at.isoformat()
+
+        return Response({
+            "results": serializer.data,
+            "cursor": next_cursor if has_more else None,
+            "has_more": has_more,
+        })
+
+    @action(detail=False, methods=["get"], url_path="unread-count")
+    def unread_count(self, request):
+        count = NotificationService.get_unread_count(request.user)
+        return Response(UnreadCountSerializer({"count": count}).data)
+
+    @action(detail=True, methods=["post"])
+    def read(self, request, pk=None):
+        notification = NotificationService.mark_read(pk, request.user)
+        if not notification:
+            raise ApplicationError(
+                "Notification not found", "NOT_FOUND", 404,
+            )
+        serializer = NotificationListSerializer(notification)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=["post"], url_path="read-all")
+    def read_all(self, request):
+        count = NotificationService.mark_all_read(request.user)
+        return Response({"marked_count": count})
+
+    def destroy(self, request, pk=None):
+        deleted = NotificationService.delete_notification(pk, request.user)
+        if not deleted:
+            raise ApplicationError(
+                "Notification not found", "NOT_FOUND", 404,
+            )
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=False, methods=["get", "patch"])
+    def preferences(self, request):
+        if request.method == "GET":
+            prefs = NotificationService.get_preferences(request.user)
+            serializer = NotificationPreferenceSerializer(prefs)
+            return Response(serializer.data)
+
+        serializer = NotificationPreferenceSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        prefs = NotificationService.update_preferences(
+            request.user, serializer.validated_data,
+        )
+        result = NotificationPreferenceSerializer(prefs)
+        return Response(result.data)
+
+    @action(detail=False, methods=["get"])
+    def analytics(self, request):
+        analytics = NotificationService.get_analytics(request.user)
+        serializer = NotificationAnalyticsSerializer(analytics)
+        return Response(serializer.data)

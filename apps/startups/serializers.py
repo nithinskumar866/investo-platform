@@ -21,11 +21,54 @@ class StartupSocialLinkSerializer(serializers.ModelSerializer):
         fields = ["id", "platform", "url"]
 
 
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+
+# File signature (magic bytes) validation for common document types
+FILE_SIGNATURES = {
+    b"%PDF": "application/pdf",
+    b"\xd0\xcf\x11\xe0": "application/msword",  # OLE2 (old doc/xls/ppt)
+    b"PK\x03\x04": "application/zip",  # DOCX/XLSX/PPTX (Office Open XML)
+    b"\xff\xd8\xff": "image/jpeg",
+    b"\x89PNG\r\n\x1a\n": "image/png",
+}
+
+
+def _check_file_signature(file_bytes: bytes) -> str | None:
+    for signature, mime_type in FILE_SIGNATURES.items():
+        if file_bytes.startswith(signature):
+            return mime_type
+    return None
+
+
 class StartupDocumentSerializer(serializers.ModelSerializer):
     class Meta:
         model = StartupDocument
         fields = ["id", "name", "file", "document_type", "uploaded_at"]
         read_only_fields = ["uploaded_at"]
+
+    def validate_file(self, value):
+        if value.size > MAX_FILE_SIZE:
+            raise serializers.ValidationError(
+                f"File size must not exceed {MAX_FILE_SIZE // (1024*1024)}MB."
+            )
+        header = value.read(32)
+        value.seek(0)
+        detected = _check_file_signature(header)
+        ext = value.name.lower().rsplit(".", 1)[-1] if "." in value.name else ""
+        allowed_exts = {
+            "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx",
+            "txt", "csv", "md", "jpg", "jpeg", "png",
+        }
+        if ext not in allowed_exts:
+            raise serializers.ValidationError(
+                f"File extension '.{ext}' is not allowed. "
+                f"Allowed extensions: {', '.join(sorted(allowed_exts))}."
+            )
+        if detected is None and ext not in ("txt", "csv", "md"):
+            raise serializers.ValidationError(
+                "File content does not match a recognized document format."
+            )
+        return value
 
 
 class StartupFundingRoundSerializer(serializers.ModelSerializer):
@@ -52,7 +95,7 @@ class StartupListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Startup
         fields = [
-            "id", "name", "tagline", "industry", "stage",
+            "id", "name", "slug", "tagline", "industry", "stage",
             "funding_goal", "equity_offered", "location",
             "logo", "team_size", "is_verified", "status",
             "view_count", "bookmark_count", "created_at",
@@ -77,12 +120,12 @@ class StartupDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Startup
         fields = [
-            "id", "name", "tagline", "description",
+            "id", "name", "slug", "tagline", "short_description", "description", "detailed_pitch",
             "industry", "stage", "business_model",
             "funding_goal", "min_funding", "max_funding",
             "equity_offered", "valuation", "currency",
             "location", "website", "logo", "pitch_deck",
-            "founded_date", "team_size",
+            "gallery_images", "founded_date", "team_size",
             "is_verified", "is_visible", "status",
             "view_count", "bookmark_count",
             "created_at", "updated_at",
@@ -91,7 +134,7 @@ class StartupDetailSerializer(serializers.ModelSerializer):
             "funding_rounds", "metrics",
         ]
         read_only_fields = [
-            "id", "is_verified", "verified_at",
+            "id", "slug", "is_verified", "verified_at",
             "view_count", "bookmark_count",
             "created_at", "updated_at",
         ]
@@ -108,12 +151,12 @@ class StartupCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Startup
         fields = [
-            "name", "tagline", "description",
+            "name", "tagline", "short_description", "description", "detailed_pitch",
             "industry", "stage", "business_model",
             "funding_goal", "min_funding", "max_funding",
             "equity_offered", "valuation", "currency",
             "location", "website", "logo", "pitch_deck",
-            "founded_date", "team_size",
+            "gallery_images", "founded_date", "team_size",
             "is_visible",
             "team_members", "social_links", "metrics",
         ]
@@ -164,7 +207,7 @@ class StartupUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Startup
-        exclude = ["owner", "created_at", "updated_at"]
+        exclude = ["owner", "created_at", "updated_at", "slug"]
         read_only_fields = [
             "id", "is_verified", "verified_at",
             "view_count", "bookmark_count",

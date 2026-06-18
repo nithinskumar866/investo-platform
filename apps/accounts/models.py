@@ -72,6 +72,7 @@ class EntrepreneurProfile(models.Model):
     )
     company_name = models.CharField(max_length=255)
     company_description = models.TextField(blank=True, default="")
+    tagline = models.CharField(max_length=200, blank=True, default="")
     website = models.URLField(blank=True, default="")
     industry = models.CharField(max_length=100, blank=True, default="")
     funding_stage = models.CharField(
@@ -90,15 +91,24 @@ class EntrepreneurProfile(models.Model):
     pitch_deck = models.FileField(upload_to="pitch_decks/", blank=True, null=True)
     linkedin_url = models.URLField(blank=True, default="")
     team_size = models.PositiveIntegerField(null=True, blank=True)
+    achievements = models.TextField(blank=True, default="")
+    city = models.CharField(max_length=100, blank=True, default="")
+    country = models.CharField(max_length=100, blank=True, default="")
+    social_links = models.JSONField(default=dict, blank=True)
+    is_public = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = "accounts_entrepreneur_profile"
         verbose_name = "Entrepreneur Profile"
+        indexes = [
+            models.Index(fields=["is_public", "industry"]),
+            models.Index(fields=["funding_stage"]),
+        ]
 
     def __str__(self):
-        return f"{self.company_name} ({self.user.email})"
+        return f"{self.company_name or self.user.email} ({self.user.email})"
 
 
 class InvestorProfile(models.Model):
@@ -118,7 +128,28 @@ class InvestorProfile(models.Model):
         blank=True,
         default="",
     )
+    bio = models.TextField(blank=True, default="")
+    tagline = models.CharField(max_length=200, blank=True, default="")
     investment_focus = models.TextField(blank=True, default="")
+    preferred_industries = models.JSONField(default=list, blank=True)
+    preferred_stages = models.JSONField(default=list, blank=True)
+    ticket_size_min = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    ticket_size_max = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    preferred_geographies = models.JSONField(default=list, blank=True)
+    portfolio_companies = models.JSONField(default=list, blank=True)
+    linkedin_url = models.URLField(blank=True, default="")
+    website_url = models.URLField(blank=True, default="")
+    city = models.CharField(max_length=100, blank=True, default="")
+    country = models.CharField(max_length=100, blank=True, default="")
+    years_of_experience = models.PositiveIntegerField(null=True, blank=True)
+    investments_completed = models.PositiveIntegerField(null=True, blank=True)
+    lead_investor = models.BooleanField(default=False)
+    follow_on_investor = models.BooleanField(default=False)
+    is_public = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    # Deprecated fields kept for backward compatibility
     preferred_stage = models.CharField(
         max_length=50,
         choices=[
@@ -131,17 +162,17 @@ class InvestorProfile(models.Model):
         blank=True,
         default="",
     )
-    ticket_size_min = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
-    ticket_size_max = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     industries_of_interest = models.TextField(blank=True, default="")
     portfolio_count = models.PositiveIntegerField(null=True, blank=True)
-    linkedin_url = models.URLField(blank=True, default="")
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = "accounts_investor_profile"
         verbose_name = "Investor Profile"
+        indexes = [
+            models.Index(fields=["is_public", "investor_type"]),
+            models.Index(fields=["city", "country"]),
+            models.Index(fields=["years_of_experience"]),
+        ]
 
     def __str__(self):
-        return f"Investor {self.user.email}"
+        return f"Investor {self.user.email} ({self.investor_type or 'no type'})"

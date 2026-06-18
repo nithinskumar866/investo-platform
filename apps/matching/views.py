@@ -1,61 +1,279 @@
 import logging
 
-from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework import viewsets, status
+from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, extend_schema_view
 
-from .models import InvestorPreference, MatchScore, InteractionEvent
-from .services import MatchingService
-from .serializers import MatchScoreSerializer, InteractionEventSerializer
 from apps.common.exceptions import ApplicationError
-from apps.startups.models import Startup
+
+from .models import MatchScore
+from .services import MatchingService
+from .repositories import MatchingRepository
+from .serializers import (
+    MatchScoreListSerializer, MatchScoreDetailSerializer,
+    SavedMatchSerializer, DismissedMatchSerializer,
+    InvestorPreferenceSerializer, InteractionEventSerializer,
+)
+from .permissions import IsInvestor, IsEntrepreneur
 
 logger = logging.getLogger(__name__)
 
 
+@extend_schema_view(
+    list=extend_schema(
+        tags=["Matching - Investor"],
+        summary="List recommended startup matches for the current investor",
+    ),
+    retrieve=extend_schema(
+        tags=["Matching - Investor"],
+        summary="Get details of a specific match",
+    ),
+)
+class InvestorMatchViewSet(viewsets.ReadOnlyModelViewSet):
+    """Investor-facing match endpoints: view recommendations, save, dismiss."""
+
+    permission_classes = [IsAuthenticated, IsInvestor]
+    serializer_class = MatchScoreListSerializer
+
+    def get_serializer_class(self):
+        if self.action == "retrieve":
+            return MatchScoreDetailSerializer
+        return MatchScoreListSerializer
+
+    def get_queryset(self):
+        return MatchScore.objects.filter(investor=self.request.user).select_related(
+            "startup", "startup__owner", "startup__metrics",
+        ).order_by("-score")
+
+    def list(self, request, *args, **kwargs):
+        limit = request.GET.get("limit", 50)
+        try:
+            limit = min(int(limit), 100)
+        except (ValueError, TypeError):
+            limit = 50
+
+        reload = request.GET.get("reload", "").lower() == "true"
+        is_async = request.GET.get("async", "").lower() == "true"
+
+        if reload:
+            if is_async:
+                from .tasks import generate_investor_matches_task
+                generate_investor_matches_task.delay(request.user.id, limit=limit)
+            else:
+                MatchingService.generate_matches_for_investor(request.user, limit=limit)
+
+        matches = self.get_queryset()
+        page = self.paginate_queryset(matches)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response({"status": "success", "data": serializer.data})
+
+        serializer = self.get_serializer(matches, many=True)
+        return Response({"status": "success", "data": serializer.data})
+
+    @extend_schema(
+        tags=["Matching - Investor"],
+        summary="Save a match for later reference",
+    )
+    @action(detail=True, methods=["post"])
+    def save(self, request, pk=None):
+        match = self.get_object()
+        MatchingService.save_match(request.user, match)
+        return Response(
+            {"status": "success", "data": {"message": "Match saved"}},
+        )
+
+    @extend_schema(
+        tags=["Matching - Investor"],
+        summary="Dismiss a match (remove from recommendations)",
+    )
+    @action(detail=True, methods=["post"])
+    def dismiss(self, request, pk=None):
+        match = self.get_object()
+        MatchingService.dismiss_match(request.user, match)
+        return Response(
+            {"status": "success", "data": {"message": "Match dismissed"}},
+        )
+
+    @extend_schema(
+        tags=["Matching - Investor"],
+        summary="List saved matches for the current investor",
+    )
+    @action(detail=False, methods=["get"])
+    def saved(self, request):
+        saved = MatchingService.get_saved_matches(request.user)
+        serializer = SavedMatchSerializer(saved, many=True)
+        return Response({"status": "success", "data": serializer.data})
+
+    @extend_schema(
+        tags=["Matching - Investor"],
+        summary="List dismissed matches for the current investor",
+    )
+    @action(detail=False, methods=["get"], url_path="dismissed")
+    def dismissed_list(self, request):
+        dismissed = MatchingService.get_dismissed_matches(request.user)
+        serializer = DismissedMatchSerializer(dismissed, many=True)
+        return Response({"status": "success", "data": serializer.data})
+
+
+@extend_schema_view(
+    list=extend_schema(
+        tags=["Matching - Entrepreneur"],
+        summary="List recommended investors for the current entrepreneur",
+    ),
+    retrieve=extend_schema(
+        tags=["Matching - Entrepreneur"],
+        summary="Get details of a specific match",
+    ),
+)
+class EntrepreneurMatchViewSet(viewsets.ReadOnlyModelViewSet):
+    """Entrepreneur-facing match endpoints: find investors, save, dismiss."""
+
+    permission_classes = [IsAuthenticated, IsEntrepreneur]
+    serializer_class = MatchScoreListSerializer
+
+    def get_serializer_class(self):
+        if self.action == "retrieve":
+            return MatchScoreDetailSerializer
+        return MatchScoreListSerializer
+
+    def get_queryset(self):
+        return MatchScore.objects.filter(
+            startup__owner=self.request.user,
+        ).select_related(
+            "investor", "investor__investor_profile",
+            "startup",
+        ).order_by("-score")
+
+    def list(self, request, *args, **kwargs):
+        startup_id = request.GET.get("startup_id")
+        limit = request.GET.get("limit", 50)
+        try:
+            limit = min(int(limit), 100)
+        except (ValueError, TypeError):
+            limit = 50
+
+        reload = request.GET.get("reload", "").lower() == "true"
+        is_async = request.GET.get("async", "").lower() == "true"
+
+        if reload:
+            startups = MatchingRepository.get_user_startups(request.user)
+            if startup_id:
+                startups = startups.filter(pk=startup_id)
+            if is_async:
+                from .tasks import generate_startup_matches_task
+                for s in startups:
+                    generate_startup_matches_task.delay(s.id, limit=limit)
+            else:
+                for s in startups:
+                    MatchingService.generate_matches_for_startup(s, limit=limit)
+
+        matches = self.get_queryset()
+        if startup_id:
+            matches = matches.filter(startup_id=startup_id)
+
+        page = self.paginate_queryset(matches)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response({"status": "success", "data": serializer.data})
+
+        serializer = self.get_serializer(matches, many=True)
+        return Response({"status": "success", "data": serializer.data})
+
+    @extend_schema(
+        tags=["Matching - Entrepreneur"],
+        summary="Save a match for later reference",
+    )
+    @action(detail=True, methods=["post"])
+    def save(self, request, pk=None):
+        match = self.get_object()
+        MatchingService.save_match(request.user, match)
+        return Response(
+            {"status": "success", "data": {"message": "Match saved"}},
+        )
+
+    @extend_schema(
+        tags=["Matching - Entrepreneur"],
+        summary="Dismiss a match (remove from recommendations)",
+    )
+    @action(detail=True, methods=["post"])
+    def dismiss(self, request, pk=None):
+        match = self.get_object()
+        MatchingService.dismiss_match(request.user, match)
+        return Response(
+            {"status": "success", "data": {"message": "Match dismissed"}},
+        )
+
+    @extend_schema(
+        tags=["Matching - Entrepreneur"],
+        summary="List saved matches",
+    )
+    @action(detail=False, methods=["get"])
+    def saved(self, request):
+        saved = MatchingService.get_saved_matches(request.user)
+        serializer = SavedMatchSerializer(saved, many=True)
+        return Response({"status": "success", "data": serializer.data})
+
+    @extend_schema(
+        tags=["Matching - Entrepreneur"],
+        summary="List dismissed matches",
+    )
+    @action(detail=False, methods=["get"], url_path="dismissed")
+    def dismissed_list(self, request):
+        dismissed = MatchingService.get_dismissed_matches(request.user)
+        serializer = DismissedMatchSerializer(dismissed, many=True)
+        return Response({"status": "success", "data": serializer.data})
+
+
+# ── Legacy function-based views (kept for backward compat) ───────
+
 @extend_schema(
     tags=["Matching"],
-    summary="Get match recommendations for the current investor",
+    summary="Get match recommendations for the current investor (legacy)",
 )
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def my_matches(request):
-    if request.user.role != "investor":
-        raise ApplicationError("Only investors can view matches", "WRONG_ROLE", 403)
-
-    limit = request.GET.get("limit", 20)
-    try:
-        limit = min(int(limit), 100)
-    except (ValueError, TypeError):
-        limit = 20
-
-    matches = MatchingService.get_matches_for_investor(request.user, limit=limit)
-    from apps.startups.serializers import StartupListSerializer
-
-    data = []
-    for m in matches:
-        startup_data = StartupListSerializer(m["startup"]).data
-        startup_data["match_score"] = m["score"]
-        startup_data["match_details"] = m["details"]
-        startup_data["is_viewed"] = m["is_viewed"]
-        startup_data["is_bookmarked"] = m["is_bookmarked"]
-        startup_data["match_id"] = m["match_id"]
-        data.append(startup_data)
-
-    return Response({"status": "success", "data": data})
+    if request.user.role == "investor":
+        vs = InvestorMatchViewSet.as_view({"get": "list"})
+        return vs(request)
+    if request.user.role == "entrepreneur":
+        vs = EntrepreneurMatchViewSet.as_view({"get": "list"})
+        return vs(request)
+    return Response(
+        {"status": "error",
+         "error": {"code": "WRONG_ROLE", "message": "Only investors and entrepreneurs can view matches"}},
+        status=403,
+    )
 
 
 @extend_schema(
     tags=["Matching"],
-    summary="Get recommended startups for the current investor (alias for my-matches)",
+    summary="Get or update investor preferences",
 )
-@api_view(["GET"])
+@api_view(["GET", "PATCH"])
 @permission_classes([IsAuthenticated])
-def recommended_startups(request):
-    return my_matches(request)
+def investor_preferences(request):
+    if request.user.role != "investor":
+        raise ApplicationError("Only investors can set preferences", "WRONG_ROLE", 403)
+
+    pref = MatchingRepository.get_or_create_preference(request.user)
+
+    if request.method == "GET":
+        return Response(
+            {"status": "success", "data": InvestorPreferenceSerializer(pref).data},
+        )
+
+    serializer = InvestorPreferenceSerializer(pref, data=request.data, partial=True)
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+
+    return Response(
+        {"status": "success", "data": InvestorPreferenceSerializer(pref).data},
+    )
 
 
 @extend_schema(
@@ -77,9 +295,8 @@ def interact(request):
 
     startup = None
     if startup_id:
-        try:
-            startup = Startup.objects.get(pk=startup_id, is_visible=True)
-        except Startup.DoesNotExist:
+        startup = MatchingRepository.get_startup_by_id(startup_id)
+        if not startup or not startup.is_visible:
             raise ApplicationError("Startup not found", "NOT_FOUND", 404)
 
     event = MatchingService.record_interaction(
@@ -109,7 +326,9 @@ def interaction_history(request):
     except (ValueError, TypeError):
         limit = 50
 
-    events = MatchingService.get_interaction_history(request.user, limit=limit)
+    events = MatchingRepository.get_user_interaction_events(
+        request.user, limit=limit,
+    )
     serializer = InteractionEventSerializer(events, many=True)
     return Response({"status": "success", "data": serializer.data})
 
@@ -126,87 +345,3 @@ def match_analytics(request):
 
     data = MatchingService.get_match_analytics()
     return Response({"status": "success", "data": data})
-
-
-@extend_schema(
-    tags=["Matching"],
-    summary="Get detailed match information for a specific startup",
-    operation_id="matching_detail_retrieve",
-)
-@api_view(["GET"])
-@permission_classes([IsAuthenticated])
-def match_detail(request, startup_id):
-    if request.user.role != "investor":
-        raise ApplicationError("Only investors can view match details", "WRONG_ROLE", 403)
-
-    try:
-        startup = Startup.objects.get(pk=startup_id, is_visible=True)
-    except Startup.DoesNotExist:
-        raise ApplicationError("Startup not found", "NOT_FOUND", 404)
-
-    try:
-        pref = InvestorPreference.objects.get(user=request.user, is_active=True)
-    except InvestorPreference.DoesNotExist:
-        raise ApplicationError("No active preferences found", "NO_PREFERENCES", 404)
-
-    try:
-        match = MatchScore.objects.get(investor=request.user, startup=startup)
-        score = float(match.score)
-        details = match.details
-        is_viewed = match.is_viewed
-        is_bookmarked = match.is_bookmarked
-        is_contacted = match.is_contacted
-        is_ignored = match.is_ignored
-    except MatchScore.DoesNotExist:
-        from apps.matching.services import ScoringEngine
-        score, scores, explanations = ScoringEngine.calculate_match(pref, startup)
-        details = {"breakdown": scores, "explanations": explanations}
-        is_viewed = False
-        is_bookmarked = False
-        is_contacted = False
-        is_ignored = False
-
-    from apps.startups.serializers import StartupDetailSerializer
-    startup_data = StartupDetailSerializer(startup).data
-
-    data = {
-        "startup": startup_data,
-        "match_score": score,
-        "match_details": details,
-        "is_viewed": is_viewed,
-        "is_bookmarked": is_bookmarked,
-        "is_contacted": is_contacted,
-        "is_ignored": is_ignored,
-    }
-
-    return Response({"status": "success", "data": data})
-
-
-# --- Investor Preferences ---
-
-@extend_schema(
-    tags=["Matching"],
-    summary="Get or update investor preferences",
-)
-@api_view(["GET", "PATCH"])
-@permission_classes([IsAuthenticated])
-def investor_preferences(request):
-    if request.user.role != "investor":
-        raise ApplicationError("Only investors can set preferences", "WRONG_ROLE", 403)
-
-    pref, created = InvestorPreference.objects.get_or_create(user=request.user)
-
-    if request.method == "GET":
-        from .serializers import InvestorPreferenceSerializer
-        return Response(
-            {"status": "success", "data": InvestorPreferenceSerializer(pref).data},
-        )
-
-    from .serializers import InvestorPreferenceSerializer
-    serializer = InvestorPreferenceSerializer(pref, data=request.data, partial=True)
-    serializer.is_valid(raise_exception=True)
-    serializer.save()
-
-    return Response(
-        {"status": "success", "data": InvestorPreferenceSerializer(pref).data},
-    )

@@ -2,12 +2,13 @@ import logging
 from django.contrib.auth import get_user_model, authenticate
 from django.utils import timezone
 from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
-from drf_spectacular.utils import extend_schema, extend_schema_view
+from drf_spectacular.utils import extend_schema, OpenApiParameter
+from apps.common.throttles import OTPRequestThrottle, ResendVerificationThrottle
 
 from .serializers import (
     RegistrationSerializer,
@@ -19,10 +20,13 @@ from .serializers import (
     PasswordResetConfirmSerializer,
     CompleteUserSerializer,
     EntrepreneurProfileSerializer,
+    PublicEntrepreneurProfileSerializer,
+    EntrepreneurProfileListSerializer,
     InvestorProfileSerializer,
+    PublicInvestorProfileSerializer,
+    InvestorProfileListSerializer,
 )
-from .services import AuthService, create_tokens_for_user
-from .models import EntrepreneurProfile, InvestorProfile
+from .services import AuthService, create_tokens_for_user, EntrepreneurProfileService, InvestorProfileService
 from apps.common.exceptions import ApplicationError
 
 User = get_user_model()
@@ -196,6 +200,7 @@ def me(request):
 )
 @api_view(["POST"])
 @permission_classes([AllowAny])
+@throttle_classes([OTPRequestThrottle])
 def verify_email(request):
     serializer = EmailVerificationSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
@@ -222,6 +227,7 @@ def verify_email(request):
 )
 @api_view(["POST"])
 @permission_classes([AllowAny])
+@throttle_classes([ResendVerificationThrottle])
 def resend_verification(request):
     email = request.data.get("email", "").lower().strip()
     user = User.objects.filter(email=email).first()
@@ -244,6 +250,7 @@ def resend_verification(request):
 )
 @api_view(["POST"])
 @permission_classes([AllowAny])
+@throttle_classes([OTPRequestThrottle])
 def forgot_password(request):
     serializer = PasswordResetRequestSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
@@ -262,6 +269,7 @@ def forgot_password(request):
 )
 @api_view(["POST"])
 @permission_classes([AllowAny])
+@throttle_classes([OTPRequestThrottle])
 def reset_password(request):
     serializer = PasswordResetConfirmSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
@@ -293,7 +301,7 @@ def entrepreneur_profile(request):
     if request.user.role != "entrepreneur":
         raise ApplicationError("User is not an entrepreneur", "WRONG_ROLE", 403)
 
-    profile, _ = EntrepreneurProfile.objects.get_or_create(user=request.user)
+    profile = EntrepreneurProfileService.get_or_create_profile(request.user)
 
     if request.method == "GET":
         return Response(
@@ -319,7 +327,7 @@ def investor_profile(request):
     if request.user.role != "investor":
         raise ApplicationError("User is not an investor", "WRONG_ROLE", 403)
 
-    profile, _ = InvestorProfile.objects.get_or_create(user=request.user)
+    profile = InvestorProfileService.get_or_create_profile(request.user)
 
     if request.method == "GET":
         return Response(
@@ -333,3 +341,148 @@ def investor_profile(request):
     return Response(
         {"status": "success", "data": InvestorProfileSerializer(profile).data},
     )
+
+
+# ── Public Entrepreneur Profiles ─────────────────────────────────
+
+
+@extend_schema(
+    tags=["Profiles"],
+    summary="List public entrepreneur profiles",
+    parameters=[
+        OpenApiParameter("industry", str, description="Filter by industry"),
+        OpenApiParameter("search", str, description="Search by name, tagline, description"),
+    ],
+)
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def public_entrepreneur_profiles(request):
+    industry = request.GET.get("industry")
+    search = request.GET.get("search")
+    profiles = EntrepreneurProfileService.list_public_profiles(
+        industry=industry, search=search,
+    )
+    serializer = EntrepreneurProfileListSerializer(profiles, many=True)
+    return Response({"status": "success", "data": serializer.data})
+
+
+@extend_schema(
+    tags=["Profiles"],
+    summary="Get a public entrepreneur profile by ID",
+)
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def public_entrepreneur_profile_detail(request, profile_id):
+    profile = EntrepreneurProfileService.get_public_profile_by_id(profile_id)
+    if not profile:
+        raise ApplicationError("Profile not found", "NOT_FOUND", 404)
+    serializer = PublicEntrepreneurProfileSerializer(profile)
+    return Response({"status": "success", "data": serializer.data})
+
+
+@extend_schema(
+    tags=["Profile"],
+    summary="Get entrepreneur profile completeness",
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def entrepreneur_profile_completeness(request):
+    if request.user.role != "entrepreneur":
+        raise ApplicationError("User is not an entrepreneur", "WRONG_ROLE", 403)
+    completeness = EntrepreneurProfileService.get_profile_completeness(request.user)
+    return Response({"status": "success", "data": completeness})
+
+
+@extend_schema(
+    tags=["Profile"],
+    summary="Get startups for the current entrepreneur profile",
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def entrepreneur_profile_startups(request):
+    if request.user.role != "entrepreneur":
+        raise ApplicationError("User is not an entrepreneur", "WRONG_ROLE", 403)
+    startups = EntrepreneurProfileService.get_profile_startups(request.user)
+    from apps.startups.serializers import StartupListSerializer
+    serializer = StartupListSerializer(startups, many=True)
+    return Response({"status": "success", "data": serializer.data})
+
+
+# ── Public Investor Profiles ────────────────────────────────────
+
+
+@extend_schema(
+    tags=["Profiles"],
+    summary="List public investor profiles",
+    parameters=[
+        OpenApiParameter("industry", str, description="Filter by preferred industry"),
+        OpenApiParameter("geography", str, description="Filter by preferred geography"),
+        OpenApiParameter("ticket_min", float, description="Minimum ticket size filter"),
+        OpenApiParameter("ticket_max", float, description="Maximum ticket size filter"),
+        OpenApiParameter("search", str, description="Search by name, tagline, focus"),
+    ],
+)
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def public_investor_profiles(request):
+    from decimal import Decimal
+    industry = request.GET.get("industry")
+    geography = request.GET.get("geography")
+    ticket_min = request.GET.get("ticket_min")
+    ticket_max = request.GET.get("ticket_max")
+    search = request.GET.get("search")
+    try:
+        ticket_min = Decimal(ticket_min) if ticket_min else None
+    except (ValueError, TypeError):
+        ticket_min = None
+    try:
+        ticket_max = Decimal(ticket_max) if ticket_max else None
+    except (ValueError, TypeError):
+        ticket_max = None
+    profiles = InvestorProfileService.list_public_profiles(
+        industry=industry, geography=geography,
+        ticket_min=ticket_min, ticket_max=ticket_max,
+        search=search,
+    )
+    serializer = InvestorProfileListSerializer(profiles, many=True)
+    return Response({"status": "success", "data": serializer.data})
+
+
+@extend_schema(
+    tags=["Profiles"],
+    summary="Get a public investor profile by ID",
+)
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def public_investor_profile_detail(request, profile_id):
+    profile = InvestorProfileService.get_public_profile_by_id(profile_id)
+    if not profile:
+        raise ApplicationError("Profile not found", "NOT_FOUND", 404)
+    serializer = PublicInvestorProfileSerializer(profile)
+    return Response({"status": "success", "data": serializer.data})
+
+
+@extend_schema(
+    tags=["Profile"],
+    summary="Get investor profile completeness",
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def investor_profile_completeness(request):
+    if request.user.role != "investor":
+        raise ApplicationError("User is not an investor", "WRONG_ROLE", 403)
+    completeness = InvestorProfileService.get_profile_completeness(request.user)
+    return Response({"status": "success", "data": completeness})
+
+
+@extend_schema(
+    tags=["Profile"],
+    summary="Get investor profile statistics",
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def investor_profile_statistics(request):
+    if request.user.role != "investor":
+        raise ApplicationError("User is not an investor", "WRONG_ROLE", 403)
+    stats = InvestorProfileService.get_investor_statistics()
+    return Response({"status": "success", "data": stats})

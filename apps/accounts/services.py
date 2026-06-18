@@ -7,6 +7,8 @@ from django.core.cache import cache
 from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
 
+from .repositories import EntrepreneurProfileRepository, InvestorProfileRepository
+
 User = get_user_model()
 logger = logging.getLogger(__name__)
 
@@ -179,3 +181,88 @@ class AuthService:
         cache.delete(cache_key)
         logger.info(f"Password reset successful for {email}")
         return True
+
+
+class EntrepreneurProfileService:
+    """Business logic for entrepreneur profile operations."""
+
+    @staticmethod
+    def get_or_create_profile(user):
+        return EntrepreneurProfileRepository.get_or_create(user)
+
+    @staticmethod
+    def get_profile(user):
+        return EntrepreneurProfileRepository.get_by_user(user)
+
+    @staticmethod
+    def update_profile(user, data: dict):
+        profile = EntrepreneurProfileRepository.get_or_create(user)
+        return EntrepreneurProfileRepository.update_profile(profile, data)
+
+    @staticmethod
+    def get_public_profile_by_id(profile_id: int):
+        return EntrepreneurProfileRepository.get_public_profiles().filter(
+            id=profile_id,
+        ).first()
+
+    @staticmethod
+    def list_public_profiles(industry=None, search=None):
+        qs = EntrepreneurProfileRepository.get_public_profiles()
+        if industry:
+            qs = qs.filter(industry__iexact=industry)
+        if search:
+            qs = EntrepreneurProfileRepository.search_public_profiles(search)
+        return qs.order_by("-created_at")
+
+    @staticmethod
+    def get_profile_startups(user):
+        return EntrepreneurProfileRepository.get_startups_for_entrepreneur(user)
+
+    @staticmethod
+    def get_profile_completeness(user):
+        profile = EntrepreneurProfileRepository.get_or_create(user)
+        return EntrepreneurProfileRepository.get_profile_completeness(profile)
+
+
+class InvestorProfileService:
+    """Business logic for investor profile operations."""
+
+    @staticmethod
+    def get_or_create_profile(user):
+        return InvestorProfileRepository.get_or_create(user)
+
+    @staticmethod
+    def get_profile(user):
+        return InvestorProfileRepository.get_by_user(user)
+
+    @staticmethod
+    def update_profile(user, data: dict):
+        profile = InvestorProfileRepository.get_or_create(user)
+        return InvestorProfileRepository.update_profile(profile, data)
+
+    @staticmethod
+    def get_public_profile_by_id(profile_id: int):
+        return InvestorProfileRepository.get_public_profiles().filter(
+            id=profile_id,
+        ).first()
+
+    @staticmethod
+    def list_public_profiles(
+        industry=None, geography=None,
+        ticket_min=None, ticket_max=None, search=None,
+    ):
+        if search:
+            return InvestorProfileRepository.search_public_profiles(search)
+        return InvestorProfileRepository.filter_profiles(
+            industry=industry, geography=geography,
+            ticket_min=ticket_min, ticket_max=ticket_max,
+        ).order_by("-created_at")
+
+    @staticmethod
+    def get_profile_completeness(user):
+        profile = InvestorProfileRepository.get_or_create(user)
+        return InvestorProfileRepository.get_profile_completeness(profile)
+
+    @staticmethod
+    def get_investor_statistics():
+        return InvestorProfileRepository.get_investor_statistics()

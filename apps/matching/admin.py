@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import InvestorPreference, MatchScore, InteractionEvent
+from .models import InvestorPreference, MatchScore, SavedMatch, DismissedMatch, InteractionEvent
 
 
 @admin.register(InvestorPreference)
@@ -17,9 +17,12 @@ class InvestorPreferenceAdmin(admin.ModelAdmin):
 
 @admin.register(MatchScore)
 class MatchScoreAdmin(admin.ModelAdmin):
-    list_display = ["investor_email", "startup_name", "score", "is_viewed", "is_bookmarked", "is_contacted"]
+    list_display = [
+        "investor_email", "startup_name", "score", "status",
+        "is_viewed", "is_bookmarked", "is_contacted",
+    ]
     search_fields = ["investor__email", "startup__name"]
-    list_filter = ["is_viewed", "is_bookmarked", "is_contacted", "is_ignored"]
+    list_filter = ["status", "is_viewed", "is_bookmarked", "is_contacted", "is_ignored"]
 
     def investor_email(self, obj):
         return obj.investor.email
@@ -30,6 +33,30 @@ class MatchScoreAdmin(admin.ModelAdmin):
         return obj.startup.name
     startup_name.short_description = "Startup"
     startup_name.admin_order_field = "startup__name"
+
+
+@admin.register(SavedMatch)
+class SavedMatchAdmin(admin.ModelAdmin):
+    list_display = ["user_email", "match_id", "created_at"]
+    search_fields = ["user__email"]
+    list_filter = ["created_at"]
+
+    def user_email(self, obj):
+        return obj.user.email
+    user_email.short_description = "User"
+    user_email.admin_order_field = "user__email"
+
+
+@admin.register(DismissedMatch)
+class DismissedMatchAdmin(admin.ModelAdmin):
+    list_display = ["user_email", "match_id", "created_at"]
+    search_fields = ["user__email"]
+    list_filter = ["created_at"]
+
+    def user_email(self, obj):
+        return obj.user.email
+    user_email.short_description = "User"
+    user_email.admin_order_field = "user__email"
 
 
 @admin.register(InteractionEvent)

@@ -4,7 +4,12 @@ from decouple import config
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-SECRET_KEY = config("DJANGO_SECRET_KEY", default="insecure-dev-key-change-in-production")
+SECRET_KEY = config("DJANGO_SECRET_KEY")
+
+# Fail hard if SECRET_KEY is the insecure default — prevents accidental prod deployment
+assert SECRET_KEY != "insecure-dev-key-change-in-production", \
+    "DJANGO_SECRET_KEY must be changed from the insecure default. " \
+    "Generate a strong key and set it via environment variable."
 
 DEBUG = config("DJANGO_DEBUG", default=False, cast=bool)
 
@@ -37,9 +42,16 @@ INSTALLED_APPS = [
     "apps.startups",
     "apps.matching",
     "apps.chat",
+    "apps.investments",
+    "apps.data_room",
     "apps.notifications",
+    "apps.meetings",
     "apps.analytics",
+    "apps.match_intelligence",
+    "apps.activity_feed",
+    "apps.search_app",
     "apps.files",
+    "apps.realtime",
     "apps.audit",
     "apps.common",
 ]
@@ -171,6 +183,8 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "anon": config("THROTTLE_ANON", default="20/hour"),
         "user": config("THROTTLE_USER", default="100/minute"),
+        "otp_request": config("THROTTLE_OTP", default="5/minute"),
+        "resend_verification": config("THROTTLE_RESEND", default="3/hour"),
     },
     "EXCEPTION_HANDLER": "apps.common.exceptions.custom_exception_handler",
     "NUM_PROXIES": 1,
@@ -228,14 +242,20 @@ CSRF_TRUSTED_ORIGINS = config(
 )
 
 # Matching Engine Weights
+# These are the single source of truth for ScoringEngine.
+# All scoring factors must sum to 100.
 MATCHING_WEIGHTS = {
     "industry": 30,
-    "stage": 20,
-    "funding": 20,
+    "stage": 15,
+    "funding": 15,
     "geography": 10,
-    "traction": 10,
-    "preferences": 10,
+    "keywords": 10,
+    "startup_completeness": 5,
+    "investor_completeness": 5,
+    "startup_activity": 5,
+    "investor_activity": 5,
 }
+assert sum(MATCHING_WEIGHTS.values()) == 100, "Matching weights must sum to 100"
 
 # Celery
 CELERY_BROKER_URL = config("REDIS_URL", default="redis://localhost:6379/0")

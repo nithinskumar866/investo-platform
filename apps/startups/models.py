@@ -1,8 +1,9 @@
 from decimal import Decimal
+from django.utils.text import slugify
 
 from django.db import models
 from django.conf import settings
-from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator, FileExtensionValidator
 
 
 class Startup(models.Model):
@@ -60,8 +61,11 @@ class Startup(models.Model):
         related_name="startups",
     )
     name = models.CharField(max_length=255, db_index=True)
+    slug = models.SlugField(max_length=280, unique=True, blank=True, db_index=True)
     tagline = models.CharField(max_length=500, blank=True, default="")
+    short_description = models.CharField(max_length=500, blank=True, default="")
     description = models.TextField(blank=True, default="")
+    detailed_pitch = models.TextField(blank=True, default="")
     industry = models.CharField(
         max_length=50,
         choices=Industry.choices,
@@ -102,6 +106,8 @@ class Startup(models.Model):
     founded_date = models.DateField(null=True, blank=True)
     team_size = models.PositiveIntegerField(null=True, blank=True)
 
+    gallery_images = models.JSONField(default=list, blank=True)
+
     is_verified = models.BooleanField(default=False)
     verification_document = models.FileField(
         upload_to="startups/verification/", blank=True, null=True,
@@ -130,10 +136,24 @@ class Startup(models.Model):
             models.Index(fields=["status", "is_visible"]),
             models.Index(fields=["-created_at"]),
             models.Index(fields=["-view_count"]),
+            models.Index(fields=["owner", "status"]),
+            models.Index(fields=["slug"]),
+            models.Index(fields=["industry", "status", "is_visible"]),
         ]
 
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base_slug = slugify(self.name)
+            unique_slug = base_slug
+            counter = 1
+            while Startup.objects.filter(slug=unique_slug).exclude(pk=self.pk).exists():
+                unique_slug = f"{base_slug}-{counter}"
+                counter += 1
+            self.slug = unique_slug
+        super().save(*args, **kwargs)
 
 
 class StartupTeamMember(models.Model):
@@ -195,7 +215,15 @@ class StartupDocument(models.Model):
         Startup, on_delete=models.CASCADE, related_name="documents",
     )
     name = models.CharField(max_length=255)
-    file = models.FileField(upload_to="startups/documents/")
+    file = models.FileField(
+        upload_to="startups/documents/",
+        validators=[FileExtensionValidator(
+            allowed_extensions=[
+                "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx",
+                "txt", "csv", "md", "jpg", "jpeg", "png",
+            ],
+        )],
+    )
     document_type = models.CharField(
         max_length=50, choices=DocumentType.choices, default=DocumentType.OTHER,
     )

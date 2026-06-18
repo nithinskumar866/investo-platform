@@ -10,7 +10,14 @@ urlpatterns = [
     path("api/v1/auth/", include("apps.accounts.urls")),
     path("api/v1/startups/", include("apps.startups.urls")),
     path("api/v1/matching/", include("apps.matching.urls")),
+    path("api/v1/matching/", include("apps.match_intelligence.urls")),
     path("api/v1/notifications/", include("apps.notifications.urls")),
+    path("api/v1/chat/", include("apps.chat.urls")),
+    path("api/v1/investments/", include("apps.investments.urls")),
+    path("api/v1/data-room/", include("apps.data_room.urls")),
+    path("api/v1/meetings/", include("apps.meetings.urls")),
+    path("api/v1/activity/", include("apps.activity_feed.urls")),
+    path("api/v1/search/", include("apps.search_app.urls")),
     path("api/v1/", include("apps.common.urls")),
 ]
 

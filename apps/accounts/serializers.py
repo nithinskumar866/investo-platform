@@ -1,3 +1,5 @@
+from django.contrib.auth.password_validation import validate_password as django_validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
@@ -56,6 +58,10 @@ class RegistrationSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"confirm_password": "Passwords do not match"}
             )
+        try:
+            django_validate_password(attrs["password"])
+        except DjangoValidationError as e:
+            raise serializers.ValidationError({"password": list(e.messages)})
         validate_registration(attrs)
         return attrs
 
@@ -186,41 +192,230 @@ class EmailVerificationSerializer(serializers.Serializer):
 
 
 class EntrepreneurProfileSerializer(serializers.ModelSerializer):
+    user = serializers.SerializerMethodField()
+
     class Meta:
         model = EntrepreneurProfile
         fields = [
             "id",
+            "user",
             "company_name",
             "company_description",
+            "tagline",
             "website",
             "industry",
             "funding_stage",
             "pitch_deck",
             "linkedin_url",
             "team_size",
+            "achievements",
+            "city",
+            "country",
+            "social_links",
+            "is_public",
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "created_at", "updated_at"]
+        read_only_fields = ["id", "user", "created_at", "updated_at"]
+
+    def get_user(self, obj):
+        return {
+            "id": obj.user.id,
+            "email": obj.user.email,
+            "first_name": obj.user.first_name,
+            "last_name": obj.user.last_name,
+            "avatar": obj.user.avatar.url if obj.user.avatar else None,
+        }
+
+
+class PublicEntrepreneurProfileSerializer(serializers.ModelSerializer):
+    user = serializers.SerializerMethodField()
+    startups = serializers.SerializerMethodField()
+    completeness = serializers.SerializerMethodField()
+
+    class Meta:
+        model = EntrepreneurProfile
+        fields = [
+            "id",
+            "user",
+            "company_name",
+            "company_description",
+            "tagline",
+            "website",
+            "industry",
+            "funding_stage",
+            "linkedin_url",
+            "team_size",
+            "achievements",
+            "city",
+            "country",
+            "social_links",
+            "created_at",
+            "startups",
+            "completeness",
+        ]
+
+    def get_user(self, obj):
+        return {
+            "id": obj.user.id,
+            "first_name": obj.user.first_name,
+            "last_name": obj.user.last_name,
+            "avatar": obj.user.avatar.url if obj.user.avatar else None,
+        }
+
+    def get_startups(self, obj):
+        from apps.startups.serializers import StartupListSerializer
+        startups = obj.user.startup_set.filter(is_visible=True).select_related(
+            "metrics",
+        )[:10]
+        return StartupListSerializer(startups, many=True).data
+
+    def get_completeness(self, obj):
+        from .repositories import EntrepreneurProfileRepository
+        return EntrepreneurProfileRepository.get_profile_completeness(obj)
+
+
+class EntrepreneurProfileListSerializer(serializers.ModelSerializer):
+    user = serializers.SerializerMethodField()
+
+    class Meta:
+        model = EntrepreneurProfile
+        fields = [
+            "id",
+            "user",
+            "company_name",
+            "tagline",
+            "industry",
+            "funding_stage",
+            "city",
+            "country",
+            "team_size",
+            "created_at",
+        ]
+
+    def get_user(self, obj):
+        return {
+            "id": obj.user.id,
+            "first_name": obj.user.first_name,
+            "last_name": obj.user.last_name,
+            "avatar": obj.user.avatar.url if obj.user.avatar else None,
+        }
 
 
 class InvestorProfileSerializer(serializers.ModelSerializer):
+    user = serializers.SerializerMethodField()
+
     class Meta:
         model = InvestorProfile
         fields = [
             "id",
+            "user",
             "investor_type",
+            "bio",
+            "tagline",
             "investment_focus",
-            "preferred_stage",
+            "preferred_industries",
+            "preferred_stages",
             "ticket_size_min",
             "ticket_size_max",
-            "industries_of_interest",
-            "portfolio_count",
+            "preferred_geographies",
+            "portfolio_companies",
             "linkedin_url",
+            "website_url",
+            "city",
+            "country",
+            "years_of_experience",
+            "investments_completed",
+            "lead_investor",
+            "follow_on_investor",
+            "is_public",
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "created_at", "updated_at"]
+        read_only_fields = ["id", "user", "created_at", "updated_at"]
+
+    def get_user(self, obj):
+        return {
+            "id": obj.user.id,
+            "email": obj.user.email,
+            "first_name": obj.user.first_name,
+            "last_name": obj.user.last_name,
+            "avatar": obj.user.avatar.url if obj.user.avatar else None,
+        }
+
+
+class PublicInvestorProfileSerializer(serializers.ModelSerializer):
+    user = serializers.SerializerMethodField()
+    completeness = serializers.SerializerMethodField()
+
+    class Meta:
+        model = InvestorProfile
+        fields = [
+            "id",
+            "user",
+            "investor_type",
+            "bio",
+            "tagline",
+            "investment_focus",
+            "preferred_industries",
+            "preferred_stages",
+            "ticket_size_min",
+            "ticket_size_max",
+            "preferred_geographies",
+            "portfolio_companies",
+            "linkedin_url",
+            "website_url",
+            "city",
+            "country",
+            "years_of_experience",
+            "investments_completed",
+            "lead_investor",
+            "follow_on_investor",
+            "created_at",
+            "completeness",
+        ]
+
+    def get_user(self, obj):
+        return {
+            "id": obj.user.id,
+            "first_name": obj.user.first_name,
+            "last_name": obj.user.last_name,
+            "avatar": obj.user.avatar.url if obj.user.avatar else None,
+        }
+
+    def get_completeness(self, obj):
+        from .repositories import InvestorProfileRepository
+        return InvestorProfileRepository.get_profile_completeness(obj)
+
+
+class InvestorProfileListSerializer(serializers.ModelSerializer):
+    user = serializers.SerializerMethodField()
+
+    class Meta:
+        model = InvestorProfile
+        fields = [
+            "id",
+            "user",
+            "investor_type",
+            "tagline",
+            "preferred_industries",
+            "preferred_stages",
+            "ticket_size_min",
+            "ticket_size_max",
+            "city",
+            "country",
+            "years_of_experience",
+            "lead_investor",
+            "created_at",
+        ]
+
+    def get_user(self, obj):
+        return {
+            "id": obj.user.id,
+            "first_name": obj.user.first_name,
+            "last_name": obj.user.last_name,
+            "avatar": obj.user.avatar.url if obj.user.avatar else None,
+        }
 
 
 class CompleteUserSerializer(serializers.ModelSerializer):

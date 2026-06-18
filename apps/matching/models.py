@@ -43,6 +43,14 @@ class InvestorPreference(models.Model):
 
 
 class MatchScore(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        RECOMMENDED = "recommended", "Recommended"
+        SAVED = "saved", "Saved"
+        CONTACTED = "contacted", "Contacted"
+        DISMISSED = "dismissed", "Dismissed"
+        CLOSED = "closed", "Closed"
+
     investor = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -57,7 +65,14 @@ class MatchScore(models.Model):
         max_digits=5, decimal_places=2,
         validators=[MinValueValidator(Decimal("0")), MaxValueValidator(Decimal("100"))],
     )
+    score_breakdown = models.JSONField(default=dict, blank=True)
     details = models.JSONField(default=dict, blank=True)
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.RECOMMENDED,
+        db_index=True,
+    )
     is_viewed = models.BooleanField(default=False)
     viewed_at = models.DateTimeField(null=True, blank=True)
     is_bookmarked = models.BooleanField(default=False)
@@ -75,10 +90,60 @@ class MatchScore(models.Model):
         indexes = [
             models.Index(fields=["investor", "-score"]),
             models.Index(fields=["startup", "-score"]),
+            models.Index(fields=["investor", "status"]),
+            models.Index(fields=["startup", "status"]),
         ]
 
     def __str__(self):
         return f"{self.investor.email} ↔ {self.startup.name}: {self.score}%"
+
+
+class SavedMatch(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="saved_matches",
+    )
+    match = models.ForeignKey(
+        MatchScore,
+        on_delete=models.CASCADE,
+        related_name="saved_by",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "matching_saved_match"
+        unique_together = [["user", "match"]]
+        indexes = [
+            models.Index(fields=["user", "-created_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.user.email} saved match {self.match.id}"
+
+
+class DismissedMatch(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="dismissed_matches",
+    )
+    match = models.ForeignKey(
+        MatchScore,
+        on_delete=models.CASCADE,
+        related_name="dismissed_by",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "matching_dismissed_match"
+        unique_together = [["user", "match"]]
+        indexes = [
+            models.Index(fields=["user", "-created_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.user.email} dismissed match {self.match.id}"
 
 
 class InteractionEvent(models.Model):
@@ -109,9 +174,12 @@ class InteractionEvent(models.Model):
 
     class Meta:
         db_table = "matching_interaction_event"
+        unique_together = [["user", "startup", "event_type"]]
         indexes = [
             models.Index(fields=["user", "event_type"]),
             models.Index(fields=["startup", "event_type"]),
+            models.Index(fields=["user", "-created_at"]),
+            models.Index(fields=["startup", "-created_at"]),
             models.Index(fields=["-created_at"]),
         ]
 

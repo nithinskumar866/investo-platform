@@ -50,10 +50,14 @@ class StartupViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action == "create":
             return [IsAuthenticated(), CanCreateStartup()]
-        if self.action in ("update", "partial_update", "destroy"):
+        if self.action in ("update", "partial_update", "destroy", "publish", "archive", "upload_document", "delete_document"):
             return [IsAuthenticated(), CanManageStartup()]
+        if self.action in ("my_startups", "bookmark", "documents"):
+            return [IsAuthenticated()]
         if self.action in ("verify", "statistics", "admin_list"):
             return [IsAuthenticated(), IsAdmin()]
+        if self.action in ("submit", "recommended_investors"):
+            return [IsAuthenticated()]
         return [AllowAny()]
 
     def get_queryset(self):
@@ -106,27 +110,55 @@ class StartupViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["get"])
     def recommended_investors(self, request, pk=None):
         startup = self.get_object()
-        investors = MatchingService.get_recommended_investors(startup)
-        return Response({"status": "success", "data": investors})
+        limit = request.GET.get("limit", 20)
+        try:
+            limit = min(int(limit), 100)
+        except (ValueError, TypeError):
+            limit = 20
+        matches = MatchingService.generate_matches_for_startup(startup, limit=limit)
+        from apps.matching.serializers import MatchScoreListSerializer
+        serializer = MatchScoreListSerializer(matches, many=True)
+        return Response({"status": "success", "data": serializer.data})
 
-    @extend_schema(tags=["Startups"], summary="Submit startup for review (change status to active)")
+    @extend_schema(tags=["Startups"], summary="Publish startup (change status from draft to active)")
     @action(detail=True, methods=["post"])
-    def submit(self, request, pk=None):
+    @permission_classes([IsAuthenticated, CanManageStartup])
+    def publish(self, request, pk=None):
         startup = self.get_object()
-        if startup.owner != request.user:
+        try:
+            StartupService.publish_startup(startup)
+            return Response({"status": "success", "data": {"message": "Startup published successfully"}})
+        except ValueError as e:
             return Response(
-                {"status": "error", "error": {"code": "FORBIDDEN", "message": "Not your startup"}},
-                status=403,
-            )
-        if startup.status != "draft":
-            return Response(
-                {"status": "error", "error": {"code": "INVALID_STATUS", "message": "Only draft startups can be submitted"}},
+                {"status": "error", "error": {"code": "INVALID_STATUS", "message": str(e)}},
                 status=400,
             )
-        startup.status = "active"
-        startup.save(update_fields=["status"])
-        logger.info(f"Startup submitted: {startup.name}")
-        return Response({"status": "success", "data": {"message": "Startup submitted for review"}})
+
+    @extend_schema(tags=["Startups"], summary="Archive startup")
+    @action(detail=True, methods=["post"])
+    @permission_classes([IsAuthenticated, CanManageStartup])
+    def archive(self, request, pk=None):
+        startup = self.get_object()
+        try:
+            StartupService.archive_startup(startup)
+            return Response({"status": "success", "data": {"message": "Startup archived successfully"}})
+        except ValueError as e:
+            return Response(
+                {"status": "error", "error": {"code": "INVALID_STATUS", "message": str(e)}},
+                status=400,
+            )
+
+    @extend_schema(tags=["Startups"], summary="List current user's startups")
+    @action(detail=False, methods=["get"])
+    @permission_classes([IsAuthenticated])
+    def my_startups(self, request):
+        startups = StartupService.get_user_startups(request.user)
+        page = self.paginate_queryset(startups)
+        if page is not None:
+            serializer = StartupListSerializer(page, many=True)
+            return self.get_paginated_response({"status": "success", "data": serializer.data})
+        serializer = StartupListSerializer(startups, many=True)
+        return Response({"status": "success", "data": serializer.data})
 
     @extend_schema(tags=["Startups"], summary="Bookmark or unbookmark a startup")
     @action(detail=True, methods=["post", "delete"])
