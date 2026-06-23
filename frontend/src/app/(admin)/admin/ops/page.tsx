@@ -103,13 +103,13 @@ export default function AdminOpsPage() {
             <div className="text-center text-muted-foreground">
               <BarChart3 className="h-8 w-8 mx-auto mb-2" />
               <p className="text-sm">Chart placeholder</p>
-              {sysMetrics?.api && (
+              {sysMetrics?.api ? (
                 <div className="mt-4 space-y-1 text-xs">
                   {Object.entries(sysMetrics.api as Record<string, unknown>).map(([k, v]) => (
                     <p key={k} className="capitalize">{k.replace("_", " ")}: {String(v)}</p>
                   ))}
                 </div>
-              )}
+              ) : null}
             </div>
           </CardContent>
         </Card>
@@ -134,7 +134,7 @@ export default function AdminOpsPage() {
                   }`} />
                   <p className="text-sm">{alert.rule}</p>
                 </div>
-                <Badge variant={alert.severity === "critical" ? "destructive" : alert.severity === "warning" ? "warning" : "default"}>
+                <Badge variant={alert.severity === "critical" ? "destructive" : alert.severity === "warning" ? "secondary" : "default"}>
                   {alert.severity}
                 </Badge>
               </div>
@@ -181,7 +181,7 @@ export default function AdminOpsPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <Badge variant={err.level === "critical" ? "destructive" : err.level === "warning" ? "warning" : "default"}>
+                    <Badge variant={err.level === "critical" ? "destructive" : err.level === "warning" ? "secondary" : "default"}>
                       {err.level}
                     </Badge>
                     <span className="text-xs text-muted-foreground">{formatRelativeTime(err.timestamp)}</span>

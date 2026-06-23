@@ -159,7 +159,7 @@ export default function SearchPage() {
           </div>
         ) : data?.results?.length ? (
           <div className="grid gap-4 sm:grid-cols-2">
-            {data.results.map((item: Record<string, unknown>, i: number) => (
+            {(data.results as Record<string, unknown>[]).map((item, i: number) => (
               <Card key={i} className="transition-colors hover:bg-accent/50">
                 <CardContent className="p-4">
                   <h3 className="font-medium">{item.name as string || item.title as string}</h3>

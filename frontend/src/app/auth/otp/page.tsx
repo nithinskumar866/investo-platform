@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter, useSearchParams } from "next/navigation"
-import { useRef, type KeyboardEvent } from "react"
+import React, { useRef, type KeyboardEvent } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -24,7 +24,7 @@ const otpSchema = z.object({
 
 type OtpForm = z.infer<typeof otpSchema>
 
-export default function OtpPage() {
+function OtpFormContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const email = searchParams.get("email") || ""
@@ -103,7 +103,9 @@ export default function OtpPage() {
                 onChange: (e) => handleChange(i, e.target.value),
               })}
               onKeyDown={(e) => handleKeyDown(i, e)}
-              ref={(el) => { inputsRef.current[i] = el }}
+              ref={(el) => {
+                inputsRef.current[i] = el
+              }}
             />
           ))}
         </div>
@@ -127,5 +129,13 @@ export default function OtpPage() {
         </Button>
       </form>
     </div>
+  )
+}
+
+export default function OtpPage() {
+  return (
+    <React.Suspense fallback={<div>Loading...</div>}>
+      <OtpFormContent />
+    </React.Suspense>
   )
 }

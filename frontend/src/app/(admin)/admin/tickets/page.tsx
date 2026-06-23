@@ -20,7 +20,7 @@ const priorityVariants: Record<string, "destructive" | "warning" | "default" | "
 
 const statusVariants: Record<string, "default" | "secondary" | "success" | "outline"> = {
   open: "default",
-  in_progress: "warning",
+  in_progress: "secondary",
   resolved: "success",
   closed: "outline",
 }

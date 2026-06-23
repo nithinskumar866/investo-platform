@@ -228,8 +228,25 @@ def verify_email(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
+    # Get user to generate tokens for auto-login
+    user = User.objects.get(email=serializer.validated_data["email"])
+    tokens = create_tokens_for_user(user)
+
+    user.last_login = timezone.now()
+    ip_address = request.META.get("REMOTE_ADDR", "")
+    if ip_address:
+        user.last_login_ip = ip_address
+    user.save(update_fields=["last_login", "last_login_ip"])
+
     return Response(
-        {"status": "success", "data": {"message": "Email verified successfully"}},
+        {
+            "status": "success",
+            "data": {
+                "message": "Email verified successfully",
+                "user": UserSerializer(user).data,
+                "tokens": tokens,
+            },
+        },
     )
 
 

@@ -35,7 +35,7 @@ export default function DealsPage() {
   const { data: investments, isLoading } = useInvestments()
 
   const columns = useMemo(() => {
-    const cols: Record<string, typeof investments> = { Lead: [], Intro: [], Meeting: [], "Term Sheet": [], Closed: [] }
+    const cols: Record<string, NonNullable<typeof investments>> = { Lead: [], Intro: [], Meeting: [], "Term Sheet": [], Closed: [] }
     ;(investments ?? []).forEach((inv) => {
       const stage = getStage(inv.status)
       if (cols[stage]) cols[stage].push(inv)

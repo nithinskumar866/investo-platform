@@ -50,8 +50,8 @@ export default function AnalyticsPage() {
       <div className="grid gap-4 md:grid-cols-3">
         {[
           { label: "Avg Match Score", value: "72%", icon: Activity, color: "text-blue-500" },
-          { label: "Deals Closed", value: kpiCards.closed_deals ?? "0", icon: TrendingUp, color: "text-emerald-500" },
-          { label: "Response Rate", value: kpiCards.response_rate ? `${kpiCards.response_rate}%` : "—", icon: TrendingUp, color: "text-amber-500" },
+          { label: "Deals Closed", value: String((kpiCards.closed_deals as any)?.value ?? kpiCards.closed_deals ?? "0"), icon: TrendingUp, color: "text-emerald-500" },
+          { label: "Response Rate", value: (kpiCards.response_rate as any)?.value ? `${(kpiCards.response_rate as any).value}%` : kpiCards.response_rate ? `${kpiCards.response_rate}%` : "—", icon: TrendingUp, color: "text-amber-500" },
         ].map((item) => {
           const Icon = item.icon
           return (

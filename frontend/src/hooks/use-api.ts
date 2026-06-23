@@ -22,9 +22,17 @@ export function useRegister() {
 export function useVerifyOTP() {
   return useMutation({
     mutationFn: (data: T.VerifyOTPRequest) =>
-      api.post<T.AuthResponse>("/auth/verify-otp/", data),
+      api.post<T.AuthResponse>("/auth/verify-email/", data),
   })
 }
+
+export function useResetPassword() {
+  return useMutation({
+    mutationFn: (data: { email: string; otp: string; password: string }) =>
+      api.post<{ status: string; data: { message: string } }>("/auth/reset-password/", data),
+  })
+}
+
 
 export function useMe() {
   return useQuery({

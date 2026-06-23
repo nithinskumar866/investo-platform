@@ -47,6 +47,8 @@ const discoveryNav = [
   { href: "/trending", label: "Trending", icon: TrendingUp },
 ]
 
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+
 const adminNav = [
   { href: "/admin", label: "Dashboard", icon: Shield },
   { href: "/admin/users", label: "Users", icon: Users },
@@ -58,7 +60,7 @@ const adminNav = [
   { href: "/admin/ops", label: "Observability", icon: Activity },
 ]
 
-export function Sidebar() {
+function SidebarContent({ isMobile = false }: { isMobile?: boolean }) {
   const pathname = usePathname()
   const { sidebarOpen, toggleSidebar } = useUIStore()
   const { user } = useAuthStore()
@@ -69,11 +71,11 @@ export function Sidebar() {
   else if (role === "investor") navItems = [...investorNav, ...discoveryNav]
   else if (role === "admin") navItems = adminNav
 
+  // On mobile, the sidebar is always fully expanded visually inside the Sheet.
+  const expanded = isMobile || sidebarOpen
+
   return (
-    <aside className={cn(
-      "fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-border bg-card transition-all duration-300",
-      sidebarOpen ? "w-64" : "w-16",
-    )}>
+    <div className="flex h-full flex-col">
       <div className="flex h-14 items-center border-b border-border px-4">
         <div className="flex items-center gap-2">
           <div className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-sm">
@@ -81,11 +83,13 @@ export function Sidebar() {
               <polyline points="22,12 18,12 15,21 9,3 6,12 2,12" />
             </svg>
           </div>
-          {sidebarOpen && <span className="text-base font-bold tracking-tight text-foreground">Investo</span>}
+          {expanded && <span className="text-base font-bold tracking-tight text-foreground">Investo</span>}
         </div>
-        <Button variant="ghost" size="icon" onClick={toggleSidebar} className="ml-auto h-6 w-6 text-muted-foreground">
-          {sidebarOpen ? <ChevronLeft className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
-        </Button>
+        {!isMobile && (
+          <Button variant="ghost" size="icon" onClick={toggleSidebar} className="ml-auto h-6 w-6 text-muted-foreground">
+            {sidebarOpen ? <ChevronLeft className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+          </Button>
+        )}
       </div>
       <nav className="flex-1 overflow-y-auto p-2 space-y-1">
         {navItems.map((item) => {
@@ -97,7 +101,7 @@ export function Sidebar() {
                 active ? "bg-accent text-accent-foreground font-medium" : "text-muted-foreground",
               )}>
               <item.icon className="h-4 w-4 shrink-0" />
-              {sidebarOpen && <span>{item.label}</span>}
+              {expanded && <span>{item.label}</span>}
             </Link>
           )
         })}
@@ -108,9 +112,23 @@ export function Sidebar() {
           pathname === "/notifications" && "bg-accent",
         )}>
           <Bell className="h-4 w-4" />
-          {sidebarOpen && <span>Notifications</span>}
+          {expanded && <span>Notifications</span>}
         </Link>
       </div>
+    </div>
+  )
+}
+
+
+export function Sidebar() {
+  const { sidebarOpen } = useUIStore()
+
+  return (
+    <aside className={cn(
+      "hidden md:flex fixed left-0 top-0 z-40 h-screen flex-col border-r border-border bg-card transition-all duration-300",
+      sidebarOpen ? "w-64" : "w-16",
+    )}>
+      <SidebarContent />
     </aside>
   )
 }
@@ -121,9 +139,16 @@ export function Topbar() {
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b border-border bg-background px-4 lg:px-6">
-      <Button variant="ghost" size="icon" onClick={toggleSidebar} className="md:hidden">
-        <Menu className="h-5 w-5" />
-      </Button>
+      <Sheet>
+        <SheetTrigger asChild>
+          <Button variant="ghost" size="icon" className="md:hidden">
+            <Menu className="h-5 w-5" />
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="left" className="w-64 p-0">
+          <SidebarContent isMobile />
+        </SheetContent>
+      </Sheet>
       <div className="flex-1" />
       <Button variant="ghost" size="sm" onClick={toggleCommandPalette} className="text-muted-foreground gap-2">
         <kbd className="pointer-events-none hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">

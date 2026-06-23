@@ -55,7 +55,7 @@ export default function AdminRiskPage() {
             key={key}
             variant={tab === key ? "default" : "ghost"}
             size="sm"
-            onClick={() => setTab(key)}
+            onClick={() => setTab(key as "flagged" | "patterns" | "suspicious")}
           >
             <Icon className="h-4 w-4 mr-1" />
             {label}
@@ -119,7 +119,7 @@ export default function AdminRiskPage() {
                   <p className="text-sm font-medium">{p.pattern}</p>
                   <p className="text-xs text-muted-foreground">{p.count} instances &middot; {p.period}</p>
                 </div>
-                <Badge variant={p.threat === "high" ? "destructive" : p.threat === "medium" ? "warning" : "default"}>
+                <Badge variant={p.threat === "high" ? "destructive" : p.threat === "medium" ? "secondary" : "default"}>
                   {p.threat}
                 </Badge>
               </div>
@@ -149,7 +149,7 @@ export default function AdminRiskPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge variant={acc.risk === "high" ? "destructive" : "warning"}>{acc.risk} risk</Badge>
+                    <Badge variant={acc.risk === "high" ? "destructive" : "secondary"}>{acc.risk} risk</Badge>
                     <Button variant="ghost" size="sm">Review</Button>
                   </div>
                 </div>
