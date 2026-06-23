@@ -4,6 +4,20 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/services/api"
 import type * as T from "@/types/api"
 
+/**
+ * Safely extracts an array from various Django REST Framework response shapes:
+ * 1. Pure DRF pagination: { count, next, previous, results: [...] }
+ * 2. Wrapped DRF pagination: { count, next, previous, results: { status: "success", data: [...] } }
+ * 3. Already unwrapped or native array: [...]
+ */
+async function fetchArray<T>(path: string, params?: Record<string, unknown>): Promise<T[]> {
+  const res = await api.get<any>(path, params)
+  if (res?.results?.data && Array.isArray(res.results.data)) return res.results.data
+  if (res?.results !== undefined && Array.isArray(res.results)) return res.results
+  if (Array.isArray(res)) return res
+  return []
+}
+
 // ── Auth ─────────────────────────────────────────────────────────
 export function useLogin() {
   return useMutation({
@@ -46,7 +60,7 @@ export function useMe() {
 export function useNotifications(params?: { page?: number }) {
   return useQuery({
     queryKey: ["notifications", params],
-    queryFn: () => api.get<T.Notification[]>("/notifications/", params as Record<string, unknown>),
+    queryFn: () => fetchArray<T.Notification>("/notifications/", params as Record<string, unknown>),
   })
 }
 
@@ -70,7 +84,7 @@ export function useMarkRead() {
 export function useStartups(params?: T.StartupListParams) {
   return useQuery({
     queryKey: ["startups", params],
-    queryFn: () => api.get<T.Startup[]>("/startups/", params as Record<string, unknown>),
+    queryFn: () => fetchArray<T.Startup>("/startups/", params as Record<string, unknown>),
   })
 }
 
@@ -84,9 +98,10 @@ export function useStartup(slug: string) {
 
 // ── Matches ──────────────────────────────────────────────────────
 export function useMatches(type: "investor" | "startup") {
+  const backendType = type === "startup" ? "entrepreneur" : type;
   return useQuery({
     queryKey: ["matches", type],
-    queryFn: () => api.get<T.MatchScore[]>(`/matching/matches/${type}/`),
+    queryFn: () => fetchArray<T.MatchScore>(`/matching/${backendType}/matches/`),
   })
 }
 
@@ -102,14 +117,14 @@ export function useMatchInsight(matchId: number) {
 export function useConversations() {
   return useQuery({
     queryKey: ["conversations"],
-    queryFn: () => api.get<T.Conversation[]>("/chat/conversations/"),
+    queryFn: () => fetchArray<T.Conversation>("/chat/conversations/"),
   })
 }
 
 export function useMessages(conversationId: number) {
   return useQuery({
     queryKey: ["messages", conversationId],
-    queryFn: () => api.get<T.Message[]>(`/chat/conversations/${conversationId}/messages/`),
+    queryFn: () => fetchArray<T.Message>(`/chat/conversations/${conversationId}/messages/`),
     enabled: !!conversationId,
     refetchInterval: 5000,
   })
@@ -119,7 +134,7 @@ export function useMessages(conversationId: number) {
 export function useMeetings() {
   return useQuery({
     queryKey: ["meetings"],
-    queryFn: () => api.get<T.Meeting[]>("/meetings/"),
+    queryFn: () => fetchArray<T.Meeting>("/meetings/"),
   })
 }
 
@@ -127,7 +142,7 @@ export function useMeetings() {
 export function useInvestments() {
   return useQuery({
     queryKey: ["investments"],
-    queryFn: () => api.get<T.InvestmentOpportunity[]>("/investments/"),
+    queryFn: () => fetchArray<T.InvestmentOpportunity>("/investments/"),
   })
 }
 
@@ -135,8 +150,9 @@ export function useInvestments() {
 export function useFounderAnalytics(startupId?: number) {
   return useQuery({
     queryKey: ["analytics", "founder", startupId],
-    queryFn: () => api.get<T.FounderDashboard>(`/analytics/founder/dashboard/?startup_id=${startupId}`),
-    enabled: !!startupId,
+    queryFn: () => api.get<T.FounderDashboard>(
+      startupId ? `/analytics/founder/dashboard/?startup_id=${startupId}` : `/analytics/founder/dashboard/`
+    ),
   })
 }
 
@@ -147,11 +163,11 @@ export function useInvestorAnalytics() {
   })
 }
 
-// ── Feed ─────────────────────────────────────────────────────────
+// ── Activity Feed ────────────────────────────────────────────────
 export function useFeed() {
   return useQuery({
     queryKey: ["feed"],
-    queryFn: () => api.get<T.FeedActivity[]>("/activity/feed/"),
+    queryFn: () => fetchArray<T.FeedActivity>("/activity/feed/"),
     refetchInterval: 15000,
   })
 }
@@ -169,7 +185,7 @@ export function useSearch(type: string, params: Record<string, unknown>) {
 export function usePlans() {
   return useQuery({
     queryKey: ["billing", "plans"],
-    queryFn: () => api.get<T.SubscriptionPlan[]>("/billing/plans/"),
+    queryFn: () => fetchArray<T.SubscriptionPlan>("/billing/plans/"),
   })
 }
 
@@ -183,7 +199,7 @@ export function useSubscription() {
 export function useInvoices() {
   return useQuery({
     queryKey: ["billing", "invoices"],
-    queryFn: () => api.get<T.Invoice[]>("/billing/invoices/"),
+    queryFn: () => fetchArray<T.Invoice>("/billing/invoices/"),
   })
 }
 
@@ -207,21 +223,21 @@ export function useAdminDashboard() {
 export function useAdminUsers(params?: Record<string, unknown>) {
   return useQuery({
     queryKey: ["admin", "users", params],
-    queryFn: () => api.get<unknown[]>("/admin/users/", params),
+    queryFn: () => fetchArray<unknown>("/admin/users/", params),
   })
 }
 
 export function useAdminTickets() {
   return useQuery({
     queryKey: ["admin", "tickets"],
-    queryFn: () => api.get<T.SupportTicket[]>("/admin/tickets/"),
+    queryFn: () => fetchArray<T.SupportTicket>("/admin/tickets/"),
   })
 }
 
 export function useAdminAuditLogs(params?: Record<string, unknown>) {
   return useQuery({
     queryKey: ["admin", "audit", params],
-    queryFn: () => api.get<T.AuditLog[]>("/admin/audit/", params),
+    queryFn: () => fetchArray<T.AuditLog>("/admin/audit/", params),
   })
 }
 

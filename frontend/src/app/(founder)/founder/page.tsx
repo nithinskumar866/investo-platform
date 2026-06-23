@@ -14,7 +14,7 @@ import Link from "next/link"
 import { formatRelativeTime, formatCurrency } from "@/lib/utils"
 
 export default function FounderDashboard() {
-  const { data: analytics, isLoading: analyticsLoading } = useFounderAnalytics(1)
+  const { data: analytics, isLoading: analyticsLoading } = useFounderAnalytics()
   const { data: recentMatches, isLoading: matchesLoading } = useMatches("investor")
   const { data: meetings, isLoading: meetingsLoading } = useMeetings()
   const { data: feed, isLoading: feedLoading } = useFeed()
