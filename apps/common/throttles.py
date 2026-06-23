@@ -16,6 +16,20 @@ class OTPRequestThrottle(SimpleRateThrottle):
         return self.cache_format % {"scope": self.scope, "ident": ident}
 
 
+class LoginRateThrottle(SimpleRateThrottle):
+    scope = "login_attempt"
+
+    def get_cache_key(self, request, view):
+        try:
+            email = request.data.get("email", "") if request.data else ""
+        except Exception:
+            email = ""
+        if email:
+            return self.cache_format % {"scope": self.scope, "ident": email.lower().strip()}
+        ident = request.META.get("REMOTE_ADDR", "")
+        return self.cache_format % {"scope": self.scope, "ident": ident}
+
+
 class ResendVerificationThrottle(SimpleRateThrottle):
     """
     Stricter throttle for resend endpoints to prevent email spam.

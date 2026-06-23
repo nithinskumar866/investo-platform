@@ -1,6 +1,8 @@
 import logging
 from django.utils import timezone
 
+from apps.common.email_service import EmailService
+
 from .models import Notification, NotificationPreference
 from .repositories import NotificationRepository
 
@@ -45,6 +47,7 @@ class NotificationService:
         )
 
         cls._broadcast(notification)
+        cls._send_email(recipient, notification_type, title, message, data)
         return notification
 
     @classmethod
@@ -124,6 +127,53 @@ class NotificationService:
             title=title,
             created_at__gte=cutoff,
         ).exists()
+
+    # ── Email dispatch ───────────────────────────────────────────
+
+    @staticmethod
+    def _send_email(recipient, notification_type, title, message, data=None):
+        prefs = NotificationRepository.get_preferences(recipient)
+        if not prefs.email_enabled:
+            return
+
+        type_to_email = {
+            "new_match": "send_match_notification",
+            "system": "send_generic",
+        }
+        email_method = type_to_email.get(notification_type)
+        if email_method == "send_match_notification":
+            EmailService.send_match_notification(
+                recipient_email=recipient.email,
+                recipient_name=recipient.first_name or recipient.email,
+                match_type=data.get("match_type", "startup") if data else "startup",
+                context={
+                    "score": data.get("score", 0) if data else 0,
+                    "startup_name": data.get("startup_name", "") if data else "",
+                    "investor_name": data.get("investor_name", "") if data else "",
+                    "investor_type": data.get("investor_type", "") if data else "",
+                    "industry": data.get("industry", "") if data else "",
+                    "stage": data.get("stage", "") if data else "",
+                    "match_url": data.get("match_url", "") if data else "",
+                },
+            )
+        elif notification_type.startswith("meeting"):
+            EmailService.send_meeting_reminder(
+                recipient_email=recipient.email,
+                recipient_name=recipient.first_name or recipient.email,
+                meeting_context={
+                    "meeting_title": title,
+                    "meeting_date": data.get("scheduled_start", "") if data else "",
+                    "meeting_time": data.get("scheduled_start", "") if data else "",
+                    "meeting_link": data.get("meeting_link", "") if data else "",
+                    "meeting_url": data.get("meeting_url", "") if data else "",
+                },
+            )
+        elif notification_type == "welcome":
+            EmailService.send_welcome(
+                recipient_email=recipient.email,
+                recipient_name=recipient.first_name or recipient.email,
+                dashboard_url=data.get("dashboard_url", "") if data else "",
+            )
 
     # ── WebSocket broadcast via Channels ─────────────────────────
 

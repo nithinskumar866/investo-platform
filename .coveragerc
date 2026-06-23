@@ -1,0 +1,33 @@
+[run]
+source = apps
+branch = True
+omit = 
+    */tests/*
+    */migrations/*
+    */__pycache__/*
+    */management/*
+    apps/common/tests/*
+    */apps.py
+    */wsgi.py
+    */asgi.py
+    manage.py
+
+[report]
+exclude_lines =
+    pragma: no cover
+    def __str__
+    def __repr__
+    class Meta
+    if __name__ == "__main__":
+    raise NotImplementedError
+    raise AssertionError
+    pass
+    def get_queryset
+    def get_serializer_class
+    def get_permissions
+
+[html]
+directory = coverage_html
+
+[xml]
+output = coverage.xml

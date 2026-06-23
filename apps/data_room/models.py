@@ -1,5 +1,8 @@
 from django.conf import settings
 from django.db import models
+from django.core.validators import FileExtensionValidator
+
+from apps.common.validators import validate_file_size, ALLOWED_DOCUMENT_TYPES
 
 
 class DataRoom(models.Model):
@@ -57,7 +60,13 @@ class DataRoomDocument(models.Model):
         on_delete=models.CASCADE,
         related_name="documents",
     )
-    file = models.FileField(upload_to="data_room/documents/")
+    file = models.FileField(
+        upload_to="data_room/documents/",
+        validators=[
+            FileExtensionValidator(allowed_extensions=ALLOWED_DOCUMENT_TYPES),
+            validate_file_size,
+        ],
+    )
     title = models.CharField(max_length=255)
     document_type = models.CharField(
         max_length=25,

@@ -1,0 +1,15 @@
+{% extends "emails/base.html" %}
+{% block header %}Meeting Reminder{% endblock %}
+{% block content %}
+<p>Hi {{ name }},</p>
+<p>This is a reminder about your upcoming meeting:</p>
+<div style="background: #f8f9ff; border-radius: 8px; padding: 20px; margin: 24px 0;">
+  <p style="font-size: 18px; font-weight: 600; margin: 0 0 12px;">{{ meeting_title }}</p>
+  <p><strong>Date:</strong> {{ meeting_date }}</p>
+  <p><strong>Time:</strong> {{ meeting_time }}</p>
+  {% if meeting_link %}
+  <p><strong>Link:</strong> <a href="{{ meeting_link }}" style="color: #667eea;">{{ meeting_link }}</a></p>
+  {% endif %}
+</div>
+<a href="{{ meeting_url }}" style="display: inline-block; background: #667eea; color: #ffffff; padding: 12px 32px; border-radius: 6px; text-decoration: none; font-weight: 600;">View Details</a>
+{% endblock %}

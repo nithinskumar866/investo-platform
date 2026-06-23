@@ -1,0 +1,17 @@
+{% extends "emails/base.html" %}
+{% block header %}New Match on Investo{% endblock %}
+{% block content %}
+<p>Hi {{ name }},</p>
+<p>Great news! You have a new match.</p>
+<div style="background: #f8f9ff; border-radius: 8px; padding: 20px; margin: 24px 0; text-align: center;">
+  {% if match_type == "startup" %}
+    <p style="font-size: 18px; font-weight: 600; margin: 0;">{{ startup_name }}</p>
+    <p style="color: #666;">{{ industry }} &middot; {{ stage }}</p>
+  {% else %}
+    <p style="font-size: 18px; font-weight: 600; margin: 0;">{{ investor_name }}</p>
+    <p style="color: #666;">{{ investor_type }}</p>
+  {% endif %}
+  <p style="margin: 16px 0 0;"><strong>Match Score: {{ score }}%</strong></p>
+</div>
+<a href="{{ match_url }}" style="display: inline-block; background: #667eea; color: #ffffff; padding: 12px 32px; border-radius: 6px; text-decoration: none; font-weight: 600;">View Match</a>
+{% endblock %}

@@ -1,6 +1,8 @@
 from django.conf import settings
 from django.db import models
 
+from apps.common.validators import validate_file_size, validate_attachment_extension
+
 
 class Conversation(models.Model):
     created_by = models.ForeignKey(
@@ -71,6 +73,7 @@ class Message(models.Model):
         upload_to="chat/attachments/",
         blank=True,
         null=True,
+        validators=[validate_attachment_extension, validate_file_size],
     )
     metadata = models.JSONField(default=dict, blank=True)
     edited_at = models.DateTimeField(null=True, blank=True)

@@ -5,6 +5,13 @@ from django.db import models
 from django.conf import settings
 from django.core.validators import MinValueValidator, MaxValueValidator, FileExtensionValidator
 
+from apps.common.validators import (
+    validate_image_extension,
+    validate_image_size,
+    validate_document_extension,
+    validate_file_size,
+)
+
 
 class Startup(models.Model):
     class Industry(models.TextChoices):
@@ -101,8 +108,16 @@ class Startup(models.Model):
     currency = models.CharField(max_length=3, default="USD")
     location = models.CharField(max_length=255, blank=True, default="")
     website = models.URLField(blank=True, default="")
-    logo = models.ImageField(upload_to="startups/logos/", blank=True, null=True)
-    pitch_deck = models.FileField(upload_to="startups/pitch_decks/", blank=True, null=True)
+    logo = models.ImageField(
+        upload_to="startups/logos/",
+        blank=True, null=True,
+        validators=[validate_image_extension, validate_image_size],
+    )
+    pitch_deck = models.FileField(
+        upload_to="startups/pitch_decks/",
+        blank=True, null=True,
+        validators=[validate_document_extension, validate_file_size],
+    )
     founded_date = models.DateField(null=True, blank=True)
     team_size = models.PositiveIntegerField(null=True, blank=True)
 
@@ -110,7 +125,9 @@ class Startup(models.Model):
 
     is_verified = models.BooleanField(default=False)
     verification_document = models.FileField(
-        upload_to="startups/verification/", blank=True, null=True,
+        upload_to="startups/verification/",
+        blank=True, null=True,
+        validators=[validate_document_extension, validate_file_size],
     )
     verified_at = models.DateTimeField(null=True, blank=True)
     is_visible = models.BooleanField(default=True, db_index=True)
@@ -164,7 +181,11 @@ class StartupTeamMember(models.Model):
     role = models.CharField(max_length=255)
     email = models.EmailField(blank=True, default="")
     linkedin_url = models.URLField(blank=True, default="")
-    photo = models.ImageField(upload_to="startups/team/", blank=True, null=True)
+    photo = models.ImageField(
+        upload_to="startups/team/",
+        blank=True, null=True,
+        validators=[validate_image_extension, validate_image_size],
+    )
     bio = models.TextField(blank=True, default="")
     is_founder = models.BooleanField(default=False)
     order = models.PositiveIntegerField(default=0)

@@ -237,12 +237,13 @@ class EntrepreneurMatchViewSet(viewsets.ReadOnlyModelViewSet):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def my_matches(request):
+    http_request = request._request if hasattr(request, "_request") else request
     if request.user.role == "investor":
         vs = InvestorMatchViewSet.as_view({"get": "list"})
-        return vs(request)
+        return vs(http_request)
     if request.user.role == "entrepreneur":
         vs = EntrepreneurMatchViewSet.as_view({"get": "list"})
-        return vs(request)
+        return vs(http_request)
     return Response(
         {"status": "error",
          "error": {"code": "WRONG_ROLE", "message": "Only investors and entrepreneurs can view matches"}},

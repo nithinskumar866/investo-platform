@@ -52,7 +52,12 @@ INSTALLED_APPS = [
     "apps.search_app",
     "apps.files",
     "apps.realtime",
+    "apps.billing",
+    "apps.operations",
+    "apps.observability",
     "apps.audit",
+    "apps.settings",
+    "apps.onboarding",
     "apps.common",
 ]
 
@@ -65,6 +70,8 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "apps.observability.middleware.RequestIDMiddleware",
+    "apps.observability.middleware.MetricsMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -185,6 +192,7 @@ REST_FRAMEWORK = {
         "user": config("THROTTLE_USER", default="100/minute"),
         "otp_request": config("THROTTLE_OTP", default="5/minute"),
         "resend_verification": config("THROTTLE_RESEND", default="3/hour"),
+        "login_attempt": config("THROTTLE_LOGIN", default="10/minute"),
     },
     "EXCEPTION_HANDLER": "apps.common.exceptions.custom_exception_handler",
     "NUM_PROXIES": 1,
@@ -229,7 +237,7 @@ SIMPLE_JWT = {
 # CORS
 CORS_ALLOWED_ORIGINS = config(
     "CORS_ALLOWED_ORIGINS",
-    default="http://localhost:8000,http://localhost:3000",
+    default="http://localhost:8000,http://localhost:3000,http://127.0.0.1:8000,http://127.0.0.1:3000",
     cast=lambda v: [s.strip() for s in v.split(",")],
 )
 CORS_ALLOW_CREDENTIALS = True
@@ -237,7 +245,7 @@ CORS_ALLOW_CREDENTIALS = True
 # CSRF
 CSRF_TRUSTED_ORIGINS = config(
     "CSRF_TRUSTED_ORIGINS",
-    default="http://localhost:8000",
+    default="http://localhost:8000,http://localhost:3000,http://127.0.0.1:8000,http://127.0.0.1:3000",
     cast=lambda v: [s.strip() for s in v.split(",")],
 )
 
@@ -274,6 +282,7 @@ EMAIL_BACKEND = config(
     default="django.core.mail.backends.console.EmailBackend",
 )
 DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="noreply@investo.com")
+FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:3000")
 EMAIL_HOST = config("EMAIL_HOST", default="")
 EMAIL_PORT = config("EMAIL_PORT", default=587, cast=int)
 EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="")

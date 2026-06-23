@@ -1,0 +1,89 @@
+name: Investo CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  DJANGO_SECRET_KEY: ci-test-secret-key-not-for-production
+  DJANGO_SETTINGS_MODULE: config.settings.testing
+  DB_NAME: investo_test
+  DB_USER: investo
+  DB_PASSWORD: investo
+  DB_HOST: localhost
+  DB_PORT: "5432"
+  REDIS_URL: redis://localhost:6379/0
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: investo_test
+          POSTGRES_USER: investo
+          POSTGRES_PASSWORD: investo
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements/base.txt
+          pip install -r requirements/development.txt
+          pip install pytest pytest-django pytest-cov pytest-xdist factory_boy
+
+      - name: Check migrations
+        run: python manage.py makemigrations --check --dry-run
+
+      - name: Run lint
+        run: ruff check apps/ config/
+
+      - name: Run tests with coverage
+        run: |
+          pytest \
+            --cov=. \
+            --cov-config=.coveragerc \
+            --cov-report=xml \
+            --cov-report=term \
+            --reuse-db \
+            -v \
+            -n auto
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.xml
+          fail_ci_if_error: false
+
+      - name: Enforce minimum coverage
+        run: |
+          coverage report --fail-under=80

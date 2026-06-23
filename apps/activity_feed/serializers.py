@@ -67,6 +67,9 @@ class FeedItemSerializer(serializers.ModelSerializer):
     investor_email = serializers.EmailField(
         source="investor.email", read_only=True, default=None,
     )
+    reaction_count = serializers.SerializerMethodField()
+    comment_count = serializers.SerializerMethodField()
+    bookmark_count = serializers.SerializerMethodField()
     user_reaction = serializers.SerializerMethodField()
     user_bookmarked = serializers.SerializerMethodField()
 
@@ -84,6 +87,21 @@ class FeedItemSerializer(serializers.ModelSerializer):
             "visibility", "created_at",
         ]
         read_only_fields = fields
+
+    def get_reaction_count(self, obj):
+        if hasattr(obj, "_reaction_count"):
+            return obj._reaction_count
+        return obj.reactions.count()
+
+    def get_comment_count(self, obj):
+        if hasattr(obj, "_comment_count"):
+            return obj._comment_count
+        return obj.comments.count()
+
+    def get_bookmark_count(self, obj):
+        if hasattr(obj, "_bookmark_count"):
+            return obj._bookmark_count
+        return obj.bookmarks.count()
 
     def get_actor_data(self, obj):
         return ActorSerializer(obj.actor).data

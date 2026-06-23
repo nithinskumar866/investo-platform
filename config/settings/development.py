@@ -22,6 +22,9 @@ INTERNAL_IPS = [
 REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"] = {
     "anon": "1000/hour",
     "user": "10000/minute",
+    "login_attempt": "1000/hour",
+    "otp_request": "1000/hour",
+    "resend_verification": "100/hour",
 }
 
 # Allow browsable API in development only
@@ -31,7 +34,6 @@ REST_FRAMEWORK["DEFAULT_RENDERER_CLASSES"] = (
 )
 
 # Override database for local development convenience
-# If .env provides DATABASE_URL, it takes precedence
 import os
 if not os.environ.get("DATABASE_URL"):
     DATABASES = {
@@ -42,6 +44,7 @@ if not os.environ.get("DATABASE_URL"):
             "PASSWORD": "investo",
             "HOST": "localhost",
             "PORT": "5432",
+            "CONN_MAX_AGE": 0,
         }
     }
 

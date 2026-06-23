@@ -20,10 +20,6 @@ python_version = "3.12"
 warn_return_any = true
 warn_unused_configs = true
 warn_redundant_casts = true
-plugins = ["mypy_django_plugin.plugin"]
-
-[tool.mypy.plugins.django-stubs]
-django_settings_module = "config.settings.base"
 
 [tool.pytest.ini_options]
 minversion = "8.0"
@@ -34,6 +30,7 @@ DJANGO_SETTINGS_MODULE = "config.settings.testing"
 [tool.coverage.run]
 source = ["apps"]
 branch = true
+omit = ["*/tests/*", "*/migrations/*", "*/__pycache__/*", "*/management/*"]
 
 [tool.coverage.report]
 exclude_also = [
@@ -41,4 +38,9 @@ exclude_also = [
     "def __repr__",
     "class Meta",
     "if __name__",
+    "def get_queryset",
+    "def get_serializer_class",
 ]
+
+[tool.coverage.html]
+directory = "coverage_html"

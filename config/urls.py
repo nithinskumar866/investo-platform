@@ -5,8 +5,17 @@ from django.conf.urls.static import static
 
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
+from apps.observability.views import health, health_db, health_redis, health_storage, health_celery
+
 urlpatterns = [
     path("admin/", admin.site.urls),
+    # Public health checks (root level)
+    path("health/", health, name="health-root"),
+    path("health/db/", health_db, name="health-db-root"),
+    path("health/redis/", health_redis, name="health-redis-root"),
+    path("health/storage/", health_storage, name="health-storage-root"),
+    path("health/celery/", health_celery, name="health-celery-root"),
+    # API routes
     path("api/v1/auth/", include("apps.accounts.urls")),
     path("api/v1/startups/", include("apps.startups.urls")),
     path("api/v1/matching/", include("apps.matching.urls")),
@@ -18,6 +27,12 @@ urlpatterns = [
     path("api/v1/meetings/", include("apps.meetings.urls")),
     path("api/v1/activity/", include("apps.activity_feed.urls")),
     path("api/v1/search/", include("apps.search_app.urls")),
+    path("api/v1/analytics/", include("apps.analytics.urls")),
+    path("api/v1/billing/", include("apps.billing.urls")),
+    path("api/v1/admin/", include("apps.operations.urls")),
+    path("api/v1/ops/", include("apps.observability.urls")),
+    path("api/v1/onboarding/", include("apps.onboarding.urls")),
+    path("api/v1/settings/", include("apps.settings.urls")),
     path("api/v1/", include("apps.common.urls")),
 ]
 

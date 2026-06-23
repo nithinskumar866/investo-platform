@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 from drf_spectacular.utils import extend_schema, OpenApiParameter
-from apps.common.throttles import OTPRequestThrottle, ResendVerificationThrottle
+from apps.common.throttles import OTPRequestThrottle, ResendVerificationThrottle, LoginRateThrottle
 
 from .serializers import (
     RegistrationSerializer,
@@ -62,6 +62,7 @@ def register(request):
     user = serializer.save()
 
     AuthService.send_verification_email(user)
+    AuthService.send_welcome_email(user)
 
     tokens = create_tokens_for_user(user)
 
@@ -86,6 +87,7 @@ def register(request):
 )
 @api_view(["POST"])
 @permission_classes([AllowAny])
+@throttle_classes([LoginRateThrottle])
 def login(request):
     """
     Custom login that returns JWT tokens.
@@ -104,11 +106,21 @@ def login(request):
     serializer = TokenObtainSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
 
-    email = serializer.validated_data.get("email")
-    password = serializer.validated_data.get("password")
+    email = request.data.get("email")
+    password = request.data.get("password")
 
     user = authenticate(username=email, password=password)
     if user is None:
+        try:
+            user_obj = User.objects.get(email__iexact=email)
+            if user_obj.check_password(password) and not user_obj.is_active:
+                return Response(
+                    {"status": "error", "error": {"code": "ACCOUNT_DISABLED", "message": "Account is disabled"}},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+        except User.DoesNotExist:
+            pass
+
         logger.warning(f"Failed login attempt for {email}")
         return Response(
             {"status": "error", "error": {"code": "INVALID_CREDENTIALS", "message": "Invalid email or password"}},

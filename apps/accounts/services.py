@@ -5,7 +5,8 @@ import logging
 from django.conf import settings
 from django.core.cache import cache
 from django.contrib.auth import get_user_model
-from django.core.mail import send_mail
+
+from apps.common.email_service import EmailService
 
 from .repositories import EntrepreneurProfileRepository, InvestorProfileRepository
 
@@ -86,20 +87,22 @@ class AuthService:
 
         cache.set(cache_key, otp_hash, timeout=600)
 
-        try:
-            send_mail(
-                subject="Verify your Investo account",
-                message=f"Your verification code is: {otp}\n\nThis code expires in 10 minutes.",
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[user.email],
-                fail_silently=False,
-            )
-            logger.info(f"Verification email sent to {user.email}")
-        except Exception as e:
-            logger.error(f"Failed to send verification email to {user.email}: {e}")
-            raise
+        EmailService.send_verification(
+            recipient_email=user.email,
+            recipient_name=user.first_name or user.email,
+            otp=otp,
+        )
 
         return otp
+
+    @staticmethod
+    def send_welcome_email(user):
+        EmailService.send_welcome(
+            recipient_email=user.email,
+            recipient_name=user.first_name or user.email,
+            dashboard_url=f"{settings.FRONTEND_URL or 'http://localhost:3000'}/dashboard",
+        )
+        logger.info(f"Welcome email sent to {user.email}")
 
     @staticmethod
     def verify_email(email: str, otp: str) -> bool:
@@ -147,18 +150,10 @@ class AuthService:
         cache_key = f"otp:reset:{user.email}"
         cache.set(cache_key, otp_hash, timeout=600)
 
-        try:
-            send_mail(
-                subject="Reset your Investo password",
-                message=f"Your password reset code is: {otp}\n\nThis code expires in 10 minutes.",
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[user.email],
-                fail_silently=False,
-            )
-            logger.info(f"Password reset OTP sent to {user.email}")
-        except Exception as e:
-            logger.error(f"Failed to send password reset email: {e}")
-            raise
+        EmailService.send_password_reset(
+            recipient_email=user.email,
+            otp=otp,
+        )
 
         return otp
 

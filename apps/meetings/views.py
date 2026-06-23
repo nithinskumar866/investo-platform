@@ -1,5 +1,6 @@
 from rest_framework import status
 from rest_framework.decorators import action
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
@@ -64,7 +65,7 @@ class MeetingViewSet(ViewSet):
         meeting = MeetingService._get_meeting(pk, request.user)
 
         if meeting.organizer_id != request.user.id:
-            raise PermissionError("Only the organizer can update meeting details")
+            raise PermissionDenied("Only the organizer can update meeting details")
 
         from .repositories import MeetingRepository
         meeting = MeetingRepository.update_meeting(meeting, serializer.validated_data)

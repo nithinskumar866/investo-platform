@@ -22,7 +22,13 @@ PASSWORD_HASHERS = [
 
 # Disable throttle in tests
 REST_FRAMEWORK["DEFAULT_THROTTLE_CLASSES"] = []
-REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"] = {}
+REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"] = {
+    "anon": None,
+    "user": None,
+    "otp_request": None,
+    "resend_verification": None,
+    "login_attempt": None,
+}
 
 # Disable unwanted middleware
 MIDDLEWARE = [m for m in MIDDLEWARE if "debug_toolbar" not in m]

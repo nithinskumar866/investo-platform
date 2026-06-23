@@ -1,5 +1,6 @@
 from celery import shared_task
 import logging
+from .services import AuthService
 
 logger = logging.getLogger(__name__)
 

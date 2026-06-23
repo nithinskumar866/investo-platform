@@ -160,6 +160,10 @@ class TokenObtainSerializer(CustomTokenObtainPairSerializer):
         self.fields[self.username_field] = serializers.EmailField()
         self.fields.pop("username", None)
 
+    def validate(self, attrs):
+        # Skip simplejwt's default authentication since our custom login view handles it
+        return attrs
+
 
 class PasswordResetRequestSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -265,7 +269,7 @@ class PublicEntrepreneurProfileSerializer(serializers.ModelSerializer):
 
     def get_startups(self, obj):
         from apps.startups.serializers import StartupListSerializer
-        startups = obj.user.startup_set.filter(is_visible=True).select_related(
+        startups = obj.user.startups.filter(is_visible=True).select_related(
             "metrics",
         )[:10]
         return StartupListSerializer(startups, many=True).data

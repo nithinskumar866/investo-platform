@@ -2,6 +2,12 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 from .managers import UserManager
+from apps.common.validators import (
+    validate_image_extension,
+    validate_image_size,
+    validate_document_extension,
+    validate_file_size,
+)
 
 
 class User(AbstractUser):
@@ -42,7 +48,11 @@ class User(AbstractUser):
         default=Role.ENTREPRENEUR,
         db_index=True,
     )
-    avatar = models.ImageField(upload_to="avatars/", blank=True, null=True)
+    avatar = models.ImageField(
+        upload_to="avatars/",
+        blank=True, null=True,
+        validators=[validate_image_extension, validate_image_size],
+    )
     phone = models.CharField(max_length=20, blank=True, default="")
     is_verified = models.BooleanField(default=False)
     email_verified_at = models.DateTimeField(null=True, blank=True)
@@ -88,7 +98,11 @@ class EntrepreneurProfile(models.Model):
         blank=True,
         default="",
     )
-    pitch_deck = models.FileField(upload_to="pitch_decks/", blank=True, null=True)
+    pitch_deck = models.FileField(
+        upload_to="pitch_decks/",
+        blank=True, null=True,
+        validators=[validate_document_extension, validate_file_size],
+    )
     linkedin_url = models.URLField(blank=True, default="")
     team_size = models.PositiveIntegerField(null=True, blank=True)
     achievements = models.TextField(blank=True, default="")

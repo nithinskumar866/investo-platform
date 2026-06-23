@@ -72,3 +72,22 @@ frontend/.next/
 *.key
 *.crt
 *.p12
+
+# Local debug files
+debug_*.py
+quick_test.py
+login_test.py
+test_api.py
+endpoint_test.ps1
+
+# Temporary request payloads
+login.json
+login_data.json
+login_req.json
+tlogin.json
+
+# TypeScript build cache
+frontend/tsconfig.tsbuildinfo
+
+# Local scratch pages
+frontend/test-page.html

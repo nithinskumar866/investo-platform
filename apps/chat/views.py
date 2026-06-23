@@ -76,6 +76,8 @@ def conversation_list(request):
 @permission_classes([IsAuthenticated])
 def conversation_detail(request, conversation_id):
     conversation = ChatService.get_conversation(request.user, conversation_id)
+    if not conversation.participants.filter(user=request.user).exists():
+        raise PermissionDenied("You are not a participant in this conversation")
     serializer = ConversationDetailSerializer(
         conversation, context={"request": request},
     )
