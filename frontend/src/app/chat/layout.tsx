@@ -40,7 +40,9 @@ export default function ChatLayout({ children }: { children: React.ReactNode }) 
             ) : (
               conversations?.map((conv) => {
                 const active = pathname === `/chat/${conv.id}`
-                const lastMsg = conv.last_message
+                const lastMsg = conv.latest_message
+                const other = conv.other_participant
+                const displayName = other ? (`${other.first_name} ${other.last_name}`.trim() || other.email || "Unknown") : "Unknown User"
                 return (
                   <Link
                     key={conv.id}
@@ -51,11 +53,11 @@ export default function ChatLayout({ children }: { children: React.ReactNode }) 
                     )}
                   >
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
-                      {lastMsg?.sender_name?.[0] || "?"}
+                      {other?.first_name?.[0] || displayName?.[0] || "?"}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm font-medium truncate">{lastMsg?.sender_name || `User ${conv.created_by}`}</p>
+                        <p className="text-sm font-medium truncate">{displayName}</p>
                         {lastMsg && (
                           <span className="text-xs text-muted-foreground shrink-0">
                             {formatRelativeTime(lastMsg.created_at)}
@@ -66,9 +68,9 @@ export default function ChatLayout({ children }: { children: React.ReactNode }) 
                         {lastMsg?.content || "No messages yet"}
                       </p>
                     </div>
-                    {!lastMsg?.read_by?.includes(conv.created_by) && (
-                      <Badge className="h-2 w-2 rounded-full p-0" />
-                    )}
+                    {conv.unread ? (
+                      <Badge className="h-2 w-2 rounded-full p-0 bg-primary" />
+                    ) : null}
                   </Link>
                 )
               })

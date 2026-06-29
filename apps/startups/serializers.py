@@ -151,15 +151,16 @@ class StartupCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Startup
         fields = [
-            "name", "tagline", "short_description", "description", "detailed_pitch",
+            "id", "name", "tagline", "short_description", "description", "detailed_pitch",
             "industry", "stage", "business_model",
             "funding_goal", "min_funding", "max_funding",
             "equity_offered", "valuation", "currency",
             "location", "website", "logo", "pitch_deck",
             "gallery_images", "founded_date", "team_size",
-            "is_visible",
+            "is_visible", "status",
             "team_members", "social_links", "metrics",
         ]
+        read_only_fields = ["id"]
 
     def create(self, validated_data):
         team_data = validated_data.pop("team_members", [])

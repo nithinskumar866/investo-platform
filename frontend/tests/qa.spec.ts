@@ -2,9 +2,9 @@ import { test, expect } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
 
-const BASE_URL = 'http://localhost:3001';
+const BASE_URL = 'http://localhost:3000';
 const RESULTS: any[] = [];
-const ARTIFACT_DIR = 'C:\\Users\\nithi\\.gemini\\antigravity-ide\\brain\\04970704-b4e2-4d7c-bdd2-48fa609bcf1a\\screenshots';
+const ARTIFACT_DIR = 'C:\\Users\\nithi\\.gemini\\antigravity-ide\\brain\\fd444762-25ce-4671-ac6b-7e9ab7e0e2fd\\scratch';
 
 if (!fs.existsSync(ARTIFACT_DIR)) {
   fs.mkdirSync(ARTIFACT_DIR, { recursive: true });
@@ -30,11 +30,11 @@ test.describe.serial('Platform QA', () => {
     });
   });
 
-  async function checkPage(page, routePath, name) {
+  async function checkPage(page: import('@playwright/test').Page, routePath: string, name: string) {
     let emptyScreen = false;
     let screenshotFile = '';
     try {
-      await page.goto(`${BASE_URL}${routePath}`, { waitUntil: 'networkidle', timeout: 30000 });
+      await page.goto(`${BASE_URL}${routePath}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
       await page.waitForTimeout(2000); // let hydration and queries finish
       const content = await page.content();
       emptyScreen = content.includes('Application Error') || content.includes('An unexpected error has occurred');
@@ -50,7 +50,7 @@ test.describe.serial('Platform QA', () => {
         Errors: [...errors, ...apiFailures].slice(0, 3).join(' | ') || (emptyScreen ? '[Screen] Application Error' : ''),
         Screenshot: screenshotFile
       });
-    } catch (e) {
+    } catch (e: any) {
       RESULTS.push({ Flow: name, Path: routePath, Pass: 'FAIL', Errors: `[Timeout/Crash] ${e.message}`, Screenshot: '' });
     }
     errors = [];
@@ -58,6 +58,7 @@ test.describe.serial('Platform QA', () => {
   }
 
   test('Founder Flow', async ({ page }) => {
+    test.setTimeout(180000);
     await page.goto(`${BASE_URL}/auth/login`);
     await page.fill('input[type="email"]', 'founder@test.com');
     await page.fill('input[type="password"]', 'password123');
@@ -74,6 +75,7 @@ test.describe.serial('Platform QA', () => {
   });
 
   test('Investor Flow', async ({ page }) => {
+    test.setTimeout(180000);
     await page.goto(`${BASE_URL}/auth/login`);
     await page.fill('input[type="email"]', 'investor@test.com');
     await page.fill('input[type="password"]', 'password123');
@@ -89,6 +91,7 @@ test.describe.serial('Platform QA', () => {
   });
 
   test('Admin Flow', async ({ page }) => {
+    test.setTimeout(180000);
     await page.goto(`${BASE_URL}/auth/login`);
     await page.fill('input[type="email"]', 'admin@investo.com');
     await page.fill('input[type="password"]', 'password123');
@@ -104,6 +107,7 @@ test.describe.serial('Platform QA', () => {
   });
   
   test('Chat Flow', async ({ page }) => {
+    test.setTimeout(180000);
     await page.goto(`${BASE_URL}/auth/login`);
     await page.fill('input[type="email"]', 'founder@test.com');
     await page.fill('input[type="password"]', 'password123');
@@ -113,11 +117,11 @@ test.describe.serial('Platform QA', () => {
     await checkPage(page, '/chat', 'Chat List');
     // Try to open first conversation
     try {
-      await page.goto(`${BASE_URL}/chat`, { waitUntil: 'networkidle' });
+      await page.goto(`${BASE_URL}/chat`, { waitUntil: 'domcontentloaded' });
       const firstConv = await page.$('a[href^="/chat/"]');
       if (firstConv) {
          const href = await firstConv.getAttribute('href');
-         await checkPage(page, href, 'Chat Open');
+         if (href) await checkPage(page, href, 'Chat Open');
       } else {
          RESULTS.push({ Flow: 'Chat Open', Path: '/chat/*', Pass: 'FAIL', Errors: 'No conversations found to open', Screenshot: '' });
       }

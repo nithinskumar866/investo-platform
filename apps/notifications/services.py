@@ -100,7 +100,7 @@ class NotificationService:
         if notification_type not in dict(Notification.Type.choices):
             return True
 
-        category = Notification.Type.TYPE_GROUP_MAP.get(
+        category = Notification.TYPE_GROUP_MAP.get(
             notification_type, "system",
         )
         pref_field = cls.CATEGORY_TO_PREF_FIELD.get(category)

@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react"
 import { useParams } from "next/navigation"
 import { useMessages } from "@/hooks/use-api"
 import { useAuthStore } from "@/stores/auth"
+import { useQueryClient } from "@tanstack/react-query"
 import { formatRelativeTime } from "@/lib/utils"
 import { Avatar } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -23,6 +24,7 @@ function MessageSkeleton() {
 export default function ChatConversationPage() {
   const { id } = useParams<{ id: string }>()
   const conversationId = Number(id)
+  const queryClient = useQueryClient()
   const { data: messages, isLoading } = useMessages(conversationId)
   const { user } = useAuthStore()
   const [input, setInput] = useState("")
@@ -40,6 +42,7 @@ export default function ChatConversationPage() {
       const { api } = await import("@/services/api")
       await api.post(`/chat/conversations/${conversationId}/messages/`, { content: input.trim() })
       setInput("")
+      queryClient.invalidateQueries({ queryKey: ["messages", conversationId] })
     } finally {
       setSending(false)
     }
@@ -64,10 +67,10 @@ export default function ChatConversationPage() {
           </div>
         )}
         {messages?.map((msg) => {
-          const isOwn = msg.sender === user?.id
+          const isOwn = msg.sender?.id === user?.id
           return (
             <div key={msg.id} className={`flex items-end gap-2 ${isOwn ? "flex-row-reverse" : ""}`}>
-              {!isOwn && <Avatar fallback={msg.sender_name?.[0] || "?"} className="h-8 w-8" />}
+              {!isOwn && <Avatar fallback={msg.sender?.first_name?.[0] || "?"} className="h-8 w-8" />}
               <div className={`max-w-[70%] ${isOwn ? "items-end" : "items-start"} flex flex-col`}>
                 <div
                   className={`rounded-2xl px-4 py-2 text-sm ${

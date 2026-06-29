@@ -8,6 +8,10 @@ ALLOWED_IMAGE_TYPES = ["jpg", "jpeg", "png", "gif", "webp", "svg"]
 ALLOWED_ATTACHMENT_TYPES = ["pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "csv", "md", "jpg", "jpeg", "png", "gif", "zip", "rar"]
 
 
+from django.utils.deconstruct import deconstructible
+
+
+@deconstructible
 class ValidateFileSize:
     def __init__(self, max_mb=50):
         self.max_mb = max_mb

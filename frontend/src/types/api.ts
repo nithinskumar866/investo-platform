@@ -11,12 +11,14 @@ export interface Startup { id: number; name: string; slug: string; tagline: stri
 export interface StartupListParams { page?: number; industry?: string; stage?: string; status?: string; search?: string; ordering?: string }
 
 // ── Matching ─────────────────────────────────────────────────────
-export interface MatchScore { id: number; investor: number; startup: number; score: number; status: string; is_viewed: boolean; is_bookmarked: boolean; created_at: string; startup_detail?: Startup; investor_detail?: User }
+export interface MatchScore { id: number; investor: number; startup: number; score: number; status: string; is_viewed: boolean; is_bookmarked: boolean; created_at: string; startup_detail?: Startup; investor_detail?: User; startup_name?: string; startup_slug?: string; startup_logo?: string | null; startup_industry?: string; startup_stage?: string; startup_location?: string; startup_tagline?: string; startup_funding_goal?: string; startup_owner_name?: string; startup_owner_id?: number; investor_name?: string; investor_type?: string; }
 export interface MatchInsight { id: number; match_score: number; summary: string; strengths: string[]; risks: string[]; recommendations: string[]; overall_score: number }
 
 // ── Chat ─────────────────────────────────────────────────────────
-export interface Conversation { id: number; created_by: number; created_at: string; updated_at: string; is_active: boolean; participants: number[]; last_message?: Message }
-export interface Message { id: number; conversation: number; sender: number; sender_email: string; sender_name: string; content: string; message_type: string; created_at: string; read_by: number[] }
+export interface ChatParticipant { id: number; email?: string; first_name: string; last_name: string; avatar: string | null; role?: string; }
+export interface ChatMessageSummary { id: number; sender_id: number; message_type: string; content: string; created_at: string; }
+export interface Conversation { id: number; created_by?: { id: number; first_name: string; last_name: string }; created_at: string; updated_at: string; is_active?: boolean; participants?: ChatParticipant[]; other_participant?: ChatParticipant; latest_message?: ChatMessageSummary; unread?: number; }
+export interface Message { id: number; conversation: number; sender: ChatParticipant; content: string; message_type: string; attachment?: string | null; metadata?: Record<string, any>; edited_at?: string | null; created_at: string; read_by: { user_id: number; read_at: string }[]; }
 
 // ── Investments ──────────────────────────────────────────────────
 export interface InvestmentOpportunity { id: number; startup: number; startup_name?: string; investor: number; investor_email?: string; amount_requested: number | null; amount_offered: number | null; status: string; created_at: string }

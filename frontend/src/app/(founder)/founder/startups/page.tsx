@@ -1,5 +1,7 @@
 "use client"
 
+import Link from "next/link"
+
 import { useStartups } from "@/hooks/use-api"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -25,8 +27,10 @@ export default function StartupsPage() {
           <h1 className="text-2xl font-bold tracking-tight">My Startups</h1>
           <p className="text-muted-foreground">Manage your startup profiles</p>
         </div>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" /> New Startup
+        <Button asChild>
+          <Link href="/founder/startups/new">
+            <Plus className="mr-2 h-4 w-4" /> New Startup
+          </Link>
         </Button>
       </div>
 

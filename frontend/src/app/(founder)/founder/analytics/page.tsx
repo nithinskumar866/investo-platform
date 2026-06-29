@@ -1,6 +1,6 @@
 "use client"
 
-import { useFounderAnalytics } from "@/hooks/use-api"
+import { useFounderAnalytics, useFounderCharts, useFounderFunnel } from "@/hooks/use-api"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { TrendingUp, TrendingDown, Eye, Handshake, CalendarCheck, DollarSign } from "lucide-react"
@@ -29,7 +29,28 @@ function StatCard({ label, value, growth, icon: Icon }: { label: string; value: 
 }
 
 export default function AnalyticsPage() {
-  const { data: analytics, isLoading } = useFounderAnalytics(1)
+  const { data: analytics, isLoading: isAnalyticsLoading } = useFounderAnalytics()
+  const { data: charts, isLoading: isChartsLoading } = useFounderCharts()
+  const { data: funnel, isLoading: isFunnelLoading } = useFounderFunnel()
+
+  const isLoading = isAnalyticsLoading || isChartsLoading || isFunnelLoading
+
+  // Backend should return arrays like { date: string, count: number } for daily_views
+  // Let's normalize it to exactly 12 bars for our simple UI visualization.
+  const chartViews = charts?.daily_views || []
+  
+  // Funnel should map from backend to UI
+  const meetingFunnel = funnel?.meeting_funnel || {}
+  const funnelSteps = [
+    { stage: "Matches", count: meetingFunnel.matches?.count || 0, pct: meetingFunnel.matches?.pct || 0 },
+    { stage: "Intros", count: meetingFunnel.intros?.count || 0, pct: meetingFunnel.intros?.pct || 0 },
+    { stage: "Meetings", count: meetingFunnel.meetings?.count || 0, pct: meetingFunnel.meetings?.pct || 0 },
+  ]
+
+  // Mock match rates until backend supports it
+  // Wait, backend matches return match trends?
+  // Let's use the actual daily_matches from charts
+  const matchTrends = charts?.daily_matches || []
 
   return (
     <div className="space-y-6">
@@ -84,63 +105,63 @@ export default function AnalyticsPage() {
               <CardDescription>Profile view trends</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex items-end justify-between h-40 gap-1">
-                {[40, 65, 45, 80, 55, 90, 70, 95, 60, 85, 75, 100].map((h, i) => (
-                  <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                    <div
-                      className="w-full rounded-md bg-primary/80 transition-all hover:bg-primary"
-                      style={{ height: `${h}%` }}
-                    />
-                    <span className="text-[10px] text-muted-foreground">
-                      {["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][i]}
-                    </span>
-                  </div>
-                ))}
-              </div>
+              {chartViews.length === 0 ? (
+                <div className="flex items-center justify-center h-40 text-sm text-muted-foreground">
+                  No view data available
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2 h-40 overflow-y-auto">
+                  {chartViews.map((item: any, i: number) => (
+                    <div key={i} className="flex items-center justify-between text-sm">
+                      <span className="w-24 truncate">{item.date}</span>
+                      <div className="flex-1 mx-2 h-2 rounded-full bg-primary/20">
+                        <div className="h-2 rounded-full bg-primary" style={{ width: `${Math.min(item.count * 10, 100)}%` }} />
+                      </div>
+                      <span className="w-8 text-right font-medium">{item.count}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Match Rate</CardTitle>
-              <CardDescription>Investor match score distribution</CardDescription>
+              <CardTitle>Matches Over Time</CardTitle>
+              <CardDescription>Investor match trends</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
-              {[
-                { label: "90-100%", value: 15, color: "bg-emerald-500" },
-                { label: "70-89%", value: 30, color: "bg-emerald-400" },
-                { label: "50-69%", value: 25, color: "bg-amber-400" },
-                { label: "Below 50%", value: 30, color: "bg-muted" },
-              ].map((item) => (
-                <div key={item.label}>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span>{item.label}</span>
-                    <span className="text-muted-foreground">{item.value}%</span>
-                  </div>
-                  <div className="h-2 w-full rounded-full bg-primary/10">
-                    <div className={`h-2 rounded-full ${item.color}`} style={{ width: `${item.value}%` }} />
-                  </div>
+            <CardContent className="space-y-3 h-40 overflow-y-auto">
+              {matchTrends.length === 0 ? (
+                <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+                  No match data available
                 </div>
-              ))}
+              ) : (
+                matchTrends.map((item: any, i: number) => (
+                  <div key={i}>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span>{item.date}</span>
+                      <span className="text-muted-foreground">{item.count} matches</span>
+                    </div>
+                    <div className="h-2 w-full rounded-full bg-primary/10">
+                      <div className="h-2 rounded-full bg-emerald-500" style={{ width: `${Math.min(item.count * 10, 100)}%` }} />
+                    </div>
+                  </div>
+                ))
+              )}
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
               <CardTitle>Meeting Conversion Funnel</CardTitle>
-              <CardDescription>Match → Intro → Meeting → Deal</CardDescription>
+              <CardDescription>Match → Intro → Meeting</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {[
-                { stage: "Matches", count: analytics?.kpi_cards?.matches?.value ?? 0, pct: 100 },
-                { stage: "Intros", count: Math.round((analytics?.kpi_cards?.matches?.value ?? 0) * 0.6), pct: 60 },
-                { stage: "Meetings", count: analytics?.kpi_cards?.meetings?.value ?? 0, pct: 35 },
-                { stage: "Deals", count: analytics?.kpi_cards?.investments?.value ?? 0, pct: 15 },
-              ].map((step) => (
+              {funnelSteps.map((step) => (
                 <div key={step.stage}>
                   <div className="flex justify-between text-sm mb-1">
                     <span className="font-medium">{step.stage}</span>
-                    <span className="text-muted-foreground">{step.count}</span>
+                    <span className="text-muted-foreground">{step.count} ({step.pct}%)</span>
                   </div>
                   <div className="h-2 w-full rounded-full bg-primary/10">
                     <div

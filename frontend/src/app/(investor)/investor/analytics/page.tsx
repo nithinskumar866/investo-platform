@@ -1,26 +1,20 @@
 "use client"
 
-import { useInvestorAnalytics } from "@/hooks/use-api"
+import { useInvestorAnalytics, useInvestorCharts } from "@/hooks/use-api"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
-  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend,
+  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell
 } from "recharts"
-import { TrendingUp, PieChartIcon, Activity } from "lucide-react"
+import { TrendingUp, Activity } from "lucide-react"
 
 const COLORS = ["#6366f1", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#06b6d4", "#f97316"]
 
-const mockTrendData = [
-  { month: "Jan", deals: 4, meetings: 2 },
-  { month: "Feb", deals: 6, meetings: 3 },
-  { month: "Mar", deals: 8, meetings: 5 },
-  { month: "Apr", deals: 7, meetings: 4 },
-  { month: "May", deals: 10, meetings: 6 },
-  { month: "Jun", deals: 12, meetings: 8 },
-]
-
 export default function AnalyticsPage() {
-  const { data: analytics, isLoading } = useInvestorAnalytics()
+  const { data: analytics, isLoading: isAnalyticsLoading } = useInvestorAnalytics()
+  const { data: charts, isLoading: isChartsLoading } = useInvestorCharts()
+
+  const isLoading = isAnalyticsLoading || isChartsLoading
 
   if (isLoading) {
     return (
@@ -39,6 +33,27 @@ export default function AnalyticsPage() {
 
   const sectorData = analytics?.sector_distribution ?? []
   const kpiCards = analytics?.kpi_cards ?? {}
+  
+  // Maps backend charts to UI format
+  const matchesTrend = charts?.daily_matches || []
+  const viewsTrend = charts?.daily_views || []
+  
+  // We'll merge them into a single array for the Recharts line chart if they align, 
+  // or just use matches for now
+  const trendData = matchesTrend.map((m: any, i: number) => ({
+    date: m.date,
+    matches: m.count,
+    views: viewsTrend[i]?.count || 0
+  }))
+
+  const pipeline: any = analytics?.deal_pipeline?.by_status || {}
+  const funnelData = [
+    { metric: "Interested", value: pipeline.interested || 0 },
+    { metric: "Meetings", value: pipeline.meeting_scheduled || 0 },
+    { metric: "Diligence", value: pipeline.due_diligence || 0 },
+    { metric: "Term Sheets", value: pipeline.term_sheet_sent || 0 },
+    { metric: "Closed", value: pipeline.invested || 0 },
+  ]
 
   return (
     <div className="space-y-6">
@@ -49,9 +64,9 @@ export default function AnalyticsPage() {
 
       <div className="grid gap-4 md:grid-cols-3">
         {[
-          { label: "Avg Match Score", value: "72%", icon: Activity, color: "text-blue-500" },
-          { label: "Deals Closed", value: String((kpiCards.closed_deals as any)?.value ?? kpiCards.closed_deals ?? "0"), icon: TrendingUp, color: "text-emerald-500" },
-          { label: "Response Rate", value: (kpiCards.response_rate as any)?.value ? `${(kpiCards.response_rate as any).value}%` : kpiCards.response_rate ? `${kpiCards.response_rate}%` : "—", icon: TrendingUp, color: "text-amber-500" },
+          { label: "Matches", value: String(kpiCards.matches?.value ?? "0"), icon: Activity, color: "text-blue-500" },
+          { label: "Deals Closed", value: String(kpiCards.invested_deals?.value ?? "0"), icon: TrendingUp, color: "text-emerald-500" },
+          { label: "Response Rate", value: kpiCards.meeting_completion_rate?.value != null ? `${kpiCards.meeting_completion_rate.value}%` : "—", icon: TrendingUp, color: "text-amber-500" },
         ].map((item) => {
           const Icon = item.icon
           return (
@@ -71,21 +86,27 @@ export default function AnalyticsPage() {
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm font-medium">Deal Flow Trends</CardTitle>
+            <CardTitle className="text-sm font-medium">Platform Activity Trends</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={mockTrendData}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                <XAxis dataKey="month" className="text-xs" tick={{ fontSize: 12 }} />
-                <YAxis className="text-xs" tick={{ fontSize: 12 }} />
-                <Tooltip
-                  contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "var(--radius)" }}
-                />
-                <Line type="monotone" dataKey="deals" stroke="#6366f1" strokeWidth={2} name="Deals" />
-                <Line type="monotone" dataKey="meetings" stroke="#10b981" strokeWidth={2} name="Meetings" />
-              </LineChart>
-            </ResponsiveContainer>
+            {trendData.length === 0 ? (
+              <div className="flex h-[300px] items-center justify-center text-sm text-muted-foreground">
+                No activity data available.
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={trendData}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                  <XAxis dataKey="date" className="text-xs" tick={{ fontSize: 12 }} />
+                  <YAxis className="text-xs" tick={{ fontSize: 12 }} />
+                  <Tooltip
+                    contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "var(--radius)" }}
+                  />
+                  <Line type="monotone" dataKey="matches" stroke="#6366f1" strokeWidth={2} name="Matches" />
+                  <Line type="monotone" dataKey="views" stroke="#10b981" strokeWidth={2} name="Views" />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
 
@@ -126,28 +147,26 @@ export default function AnalyticsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm font-medium">Response Rate Metrics</CardTitle>
+          <CardTitle className="text-sm font-medium">Deal Pipeline Funnel</CardTitle>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart
-              data={[
-                { metric: "Contacted", value: 24 },
-                { metric: "Responded", value: 16 },
-                { metric: "Meetings", value: 10 },
-                { metric: "Term Sheets", value: 5 },
-                { metric: "Closed", value: 3 },
-              ]}
-            >
-              <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-              <XAxis dataKey="metric" className="text-xs" tick={{ fontSize: 12 }} />
-              <YAxis className="text-xs" tick={{ fontSize: 12 }} />
-              <Tooltip
-                contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "var(--radius)" }}
-              />
-              <Bar dataKey="value" fill="#6366f1" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          {funnelData.every(d => d.value === 0) ? (
+            <div className="flex h-[250px] items-center justify-center text-sm text-muted-foreground">
+              No deals in pipeline.
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={funnelData}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                <XAxis dataKey="metric" className="text-xs" tick={{ fontSize: 12 }} />
+                <YAxis className="text-xs" tick={{ fontSize: 12 }} />
+                <Tooltip
+                  contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "var(--radius)" }}
+                />
+                <Bar dataKey="value" fill="#6366f1" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </CardContent>
       </Card>
     </div>

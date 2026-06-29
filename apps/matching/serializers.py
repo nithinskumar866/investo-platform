@@ -34,6 +34,7 @@ class MatchScoreListSerializer(serializers.ModelSerializer):
         source="startup.funding_goal", max_digits=15, decimal_places=2, read_only=True,
     )
     startup_owner_name = serializers.SerializerMethodField()
+    startup_owner_id = serializers.IntegerField(source="startup.owner_id", read_only=True)
     investor_name = serializers.SerializerMethodField()
     investor_type = serializers.SerializerMethodField()
 
@@ -43,7 +44,7 @@ class MatchScoreListSerializer(serializers.ModelSerializer):
             "id", "investor_id", "startup_id",
             "startup_name", "startup_slug", "startup_logo",
             "startup_industry", "startup_stage", "startup_location",
-            "startup_tagline", "startup_funding_goal", "startup_owner_name",
+            "startup_tagline", "startup_funding_goal", "startup_owner_name", "startup_owner_id",
             "investor_name", "investor_type",
             "score", "score_breakdown", "status",
             "is_viewed", "viewed_at",

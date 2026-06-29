@@ -11,11 +11,17 @@ import type * as T from "@/types/api"
  * 3. Already unwrapped or native array: [...]
  */
 async function fetchArray<T>(path: string, params?: Record<string, unknown>): Promise<T[]> {
-  const res = await api.get<any>(path, params)
-  if (res?.results?.data && Array.isArray(res.results.data)) return res.results.data
-  if (res?.results !== undefined && Array.isArray(res.results)) return res.results
-  if (Array.isArray(res)) return res
-  return []
+  try {
+    const res = await api.get<any>(path, params)
+    if (!res) return []
+    if (res?.results?.data && Array.isArray(res.results.data)) return res.results.data
+    if (res?.results !== undefined && Array.isArray(res.results)) return res.results
+    if (res?.data && Array.isArray(res.data)) return res.data
+    if (Array.isArray(res)) return res
+    return []
+  } catch (error) {
+    throw error
+  }
 }
 
 // ── Auth ─────────────────────────────────────────────────────────
@@ -53,6 +59,13 @@ export function useMe() {
     queryKey: ["me"],
     queryFn: () => api.get<T.User>("/auth/me/"),
     enabled: !!api.getToken(),
+  })
+}
+
+export function useInvestors(params?: Record<string, unknown>) {
+  return useQuery({
+    queryKey: ["investors", params],
+    queryFn: () => fetchArray<any>("/auth/profiles/investor/", params),
   })
 }
 
@@ -96,9 +109,21 @@ export function useStartup(slug: string) {
   })
 }
 
+export function useCreateStartup() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: Partial<T.Startup>) =>
+      api.post<T.Startup>("/startups/", data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["startups"] })
+      qc.invalidateQueries({ queryKey: ["analytics"] })
+    },
+  })
+}
+
 // ── Matches ──────────────────────────────────────────────────────
 export function useMatches(type: "investor" | "startup") {
-  const backendType = type === "startup" ? "entrepreneur" : type;
+  const backendType = type === "startup" ? "investor" : "entrepreneur";
   return useQuery({
     queryKey: ["matches", type],
     queryFn: () => fetchArray<T.MatchScore>(`/matching/${backendType}/matches/`),
@@ -118,6 +143,15 @@ export function useConversations() {
   return useQuery({
     queryKey: ["conversations"],
     queryFn: () => fetchArray<T.Conversation>("/chat/conversations/"),
+  })
+}
+
+export function useCreateConversation() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: { participant_id: number }) =>
+      api.post<T.Conversation>("/chat/conversations/", data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["conversations"] }),
   })
 }
 
@@ -156,10 +190,35 @@ export function useFounderAnalytics(startupId?: number) {
   })
 }
 
+export function useFounderCharts(startupId?: number) {
+  return useQuery({
+    queryKey: ["analytics", "founder", "charts", startupId],
+    queryFn: () => api.get<any>(
+      startupId ? `/analytics/founder/charts/?startup_id=${startupId}` : `/analytics/founder/charts/`
+    ),
+  })
+}
+
+export function useFounderFunnel(startupId?: number) {
+  return useQuery({
+    queryKey: ["analytics", "founder", "funnel", startupId],
+    queryFn: () => api.get<any>(
+      startupId ? `/analytics/founder/funnel/?startup_id=${startupId}` : `/analytics/founder/funnel/`
+    ),
+  })
+}
+
 export function useInvestorAnalytics() {
   return useQuery({
     queryKey: ["analytics", "investor"],
     queryFn: () => api.get<T.InvestorDashboard>("/analytics/investor/dashboard/"),
+  })
+}
+
+export function useInvestorCharts() {
+  return useQuery({
+    queryKey: ["analytics", "investor", "charts"],
+    queryFn: () => api.get<any>("/analytics/investor/charts/"),
   })
 }
 
@@ -216,7 +275,7 @@ export function useSubscribe() {
 export function useAdminDashboard() {
   return useQuery({
     queryKey: ["admin", "dashboard"],
-    queryFn: () => api.get<T.AdminDashboard>("/admin/dashboard/"),
+    queryFn: () => api.get<any>("/analytics/platform/overview/"),
   })
 }
 

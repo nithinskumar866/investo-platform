@@ -55,7 +55,6 @@ export default function MatchesPage() {
       ) : (
         <div className="space-y-3">
           {sorted.map((m) => {
-            const s = m.startup_detail
             const expanded = expandedId === m.id
 
             return (
@@ -66,7 +65,7 @@ export default function MatchesPage() {
                       <Building2 className="mt-1 h-8 w-8 rounded-lg bg-primary/10 p-1.5 text-primary" />
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <h3 className="font-semibold">{s?.name ?? `Startup #${m.startup}`}</h3>
+                          <h3 className="font-semibold">{m.startup_name ?? `Startup #${m.startup}`}</h3>
                           <Badge
                             variant={m.score >= 80 ? "success" : m.score >= 50 ? "warning" : "secondary"}
                           >
@@ -74,20 +73,18 @@ export default function MatchesPage() {
                           </Badge>
                           {m.status === "pending" && <Badge variant="outline">New</Badge>}
                         </div>
-                        {s?.tagline && (
-                          <p className="text-sm text-muted-foreground">{s.tagline}</p>
+                        {m.startup_tagline && (
+                          <p className="text-sm text-muted-foreground">{m.startup_tagline}</p>
                         )}
-                        {s && (
-                          <div className="flex flex-wrap gap-2 mt-2">
-                            <Badge variant="secondary" className="text-xs">{s.industry}</Badge>
-                            <Badge variant="outline" className="text-xs">{s.stage}</Badge>
-                          </div>
-                        )}
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          <Badge variant="secondary" className="text-xs">{m.startup_industry}</Badge>
+                          <Badge variant="outline" className="text-xs">{m.startup_stage}</Badge>
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <Button variant="outline" size="sm" asChild>
-                        <Link href={`/chat?startup=${m.startup}`}>
+                        <Link href={`/chat?participant=${m.startup_owner_id}`} className="message-startup-btn">
                           <MessageSquare className="mr-1 h-3 w-3" /> Message
                         </Link>
                       </Button>
@@ -100,29 +97,29 @@ export default function MatchesPage() {
                     </div>
                   </div>
 
-                  {expanded && s && (
+                  {expanded && (
                     <div className="mt-4 border-t pt-4 space-y-3">
                       <div className="grid gap-3 sm:grid-cols-2">
                         <div>
                           <p className="text-xs text-muted-foreground">Location</p>
-                          <p className="text-sm">{s.location || "N/A"}</p>
+                          <p className="text-sm">{m.startup_location || "N/A"}</p>
                         </div>
                         <div>
                           <p className="text-xs text-muted-foreground">Team Size</p>
-                          <p className="text-sm">{s.team_size ?? "N/A"} members</p>
+                          <p className="text-sm">{"N/A"}</p>
                         </div>
                         <div>
                           <p className="text-xs text-muted-foreground">Funding Goal</p>
-                          <p className="text-sm">{s.funding_goal ? `$${s.funding_goal.toLocaleString()}` : "N/A"}</p>
+                          <p className="text-sm">{m.startup_funding_goal ? `$${Number(m.startup_funding_goal).toLocaleString()}` : "N/A"}</p>
                         </div>
                         <div>
                           <p className="text-xs text-muted-foreground">Valuation</p>
-                          <p className="text-sm">{s.valuation ? `$${s.valuation.toLocaleString()}` : "N/A"}</p>
+                          <p className="text-sm">{"N/A"}</p>
                         </div>
                       </div>
-                      <p className="text-sm text-muted-foreground line-clamp-3">{s.description}</p>
+                      <p className="text-sm text-muted-foreground line-clamp-3">{m.startup_tagline}</p>
                       <Button variant="outline" size="sm" asChild>
-                        <Link href={`/startup/${s.slug}`}>View Full Profile</Link>
+                        <Link href={`/startup/${m.startup_slug}`}>View Full Profile</Link>
                       </Button>
                     </div>
                   )}

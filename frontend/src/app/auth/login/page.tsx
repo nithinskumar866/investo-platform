@@ -41,6 +41,7 @@ export default function LoginPage() {
         api.setToken(res.tokens.access)
         localStorage.setItem("refresh_token", res.tokens.refresh)
         setUser(res.user)
+        console.log("LOGIN SUCCESS USER:", JSON.stringify(res.user))
         toast.success("Welcome back!")
         if (res.user.role === "entrepreneur") router.push("/founder")
         else if (res.user.role === "investor") router.push("/investor")

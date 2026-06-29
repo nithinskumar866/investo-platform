@@ -104,9 +104,9 @@ class ChatService:
 
         from apps.notifications.services import NotificationService
         for participant in conversation.participants.all():
-            if participant.id != current_user.id:
+            if participant.user.id != current_user.id:
                 NotificationService.notify(
-                    recipient=participant,
+                    recipient=participant.user,
                     notification_type="message_received",
                     title="New Message",
                     message=f"{current_user.email}: {content[:120]}{'...' if len(content) > 120 else ''}",

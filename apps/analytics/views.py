@@ -18,7 +18,18 @@ def founder_dashboard(request):
     startup_id = serializer.validated_data.get("startup_id")
     startups = request.user.startups.all()
     if not startups.exists():
-        raise ApplicationError("No startups found for this user", "NOT_FOUND", 404)
+        return Response({
+            "kpi_cards": {
+                "startup_views": {"value": 0, "growth": 0, "unique_investors": 0},
+                "matches": {"value": 0, "growth": 0, "avg_score": 0},
+                "saved_by_investors": {"value": 0},
+                "chat_engagement": {"value": 0, "growth": 0, "conversations": 0},
+                "data_room": {"value": 0, "growth": 0, "unique_viewers": 0},
+                "meeting_completion_rate": {"value": 0},
+            },
+            "funding_progress": {"target": 0, "raised": 0, "percentage": 0, "days_remaining": 0},
+        })
+
     if startup_id is None:
         startup_id = startups.first().id
 
@@ -50,7 +61,10 @@ def founder_funnel(request):
     startup_id = request.query_params.get("startup_id")
     startups = request.user.startups.all()
     if not startups.exists():
-        raise ApplicationError("No startups found", "NOT_FOUND", 404)
+        return Response({
+            "meeting_funnel": {},
+            "investment_funnel": {},
+        })
     sid = int(startup_id) if startup_id else startups.first().id
 
     data = AnalyticsService.founder_funnel(request.user, sid)
@@ -73,7 +87,14 @@ def founder_charts(request):
     startup_id = serializer.validated_data.get("startup_id")
     startups = request.user.startups.all()
     if not startups.exists():
-        raise ApplicationError("No startups found", "NOT_FOUND", 404)
+        return Response({
+            "daily_views": [],
+            "daily_matches": [],
+            "daily_messages": [],
+            "daily_document_views": [],
+            "weekly_growth": [],
+            "monthly_growth": [],
+        })
     sid = int(startup_id) if startup_id else startups.first().id
 
     data = AnalyticsService.founder_charts(

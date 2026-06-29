@@ -7,28 +7,19 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { Search, Filter, MapPin, Briefcase, DollarSign, MessageSquare, UserPlus } from "lucide-react"
+import { useInvestors } from "@/hooks/use-api"
+import { Skeleton } from "@/components/ui/skeleton"
 
 const sectors = ["Fintech", "HealthTech", "AI/ML", "SaaS", "CleanTech", "EdTech", "BioTech", "E-Commerce", "PropTech", "Cyber Security"]
-const checkRanges = [
-  { label: "< $100K", min: 0, max: 100000 },
-  { label: "$100K–$500K", min: 100000, max: 500000 },
-  { label: "$500K–$1M", min: 500000, max: 1000000 },
-  { label: "$1M–$5M", min: 1000000, max: 5000000 },
-  { label: "$5M+", min: 5000000, max: null },
-]
-
-const mockInvestors = [
-  { id: 1, name: "Sarah Chen", firm: "Velocity Ventures", location: "San Francisco, CA", sectors: ["Fintech", "AI/ML"], checkRange: "$500K–$2M", portfolioCount: 24, matchScore: 92 },
-  { id: 2, name: "Marcus Johnson", firm: "Apex Capital", location: "New York, NY", sectors: ["SaaS", "HealthTech"], checkRange: "$1M–$5M", portfolioCount: 18, matchScore: 87 },
-  { id: 3, name: "Priya Patel", firm: "Nexus Fund", location: "Austin, TX", sectors: ["AI/ML", "CleanTech"], checkRange: "$500K–$2M", portfolioCount: 31, matchScore: 85 },
-  { id: 4, name: "Alex Rivera", firm: "Horizon Partners", location: "Boston, MA", sectors: ["BioTech", "HealthTech"], checkRange: "$2M–$10M", portfolioCount: 15, matchScore: 78 },
-  { id: 5, name: "Emily Watson", firm: "Summit Equity", location: "Seattle, WA", sectors: ["SaaS", "EdTech"], checkRange: "$100K–$500K", portfolioCount: 42, matchScore: 73 },
-  { id: 6, name: "David Kim", firm: "Pioneer Ventures", location: "Los Angeles, CA", sectors: ["E-Commerce", "PropTech"], checkRange: "$500K–$2M", portfolioCount: 27, matchScore: 71 },
-]
 
 export default function DiscoverPage() {
   const [search, setSearch] = useState("")
   const [selectedSectors, setSelectedSectors] = useState<string[]>([])
+  
+  const { data: investors, isLoading, error } = useInvestors({
+    search: search || undefined,
+    industry: selectedSectors.length > 0 ? selectedSectors.join(",") : undefined,
+  })
 
   const toggleSector = (sector: string) => {
     setSelectedSectors((prev) =>
@@ -36,11 +27,13 @@ export default function DiscoverPage() {
     )
   }
 
-  const filtered = mockInvestors.filter(
-    (inv) =>
-      (!search || inv.name.toLowerCase().includes(search.toLowerCase()) || inv.firm.toLowerCase().includes(search.toLowerCase())) &&
-      (!selectedSectors.length || selectedSectors.some((s) => inv.sectors.includes(s)))
-  )
+  // Formatting ticket sizes nicely
+  const formatTicketSize = (min?: number, max?: number) => {
+    if (!min && !max) return "Undisclosed"
+    const fMin = min ? `$${(min / 1000).toFixed(0)}K` : "$0"
+    const fMax = max ? `$${(max / 1000000).toFixed(1)}M` : "No limit"
+    return `${fMin} – ${fMax}`
+  }
 
   return (
     <div className="space-y-6">
@@ -77,47 +70,83 @@ export default function DiscoverPage() {
         ))}
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {filtered.map((investor) => (
-          <Card key={investor.id} className="hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-start gap-4">
-              <Avatar fallback={investor.name.split(" ").map((n) => n[0]).join("")} className="h-12 w-12" />
-              <div className="flex-1 min-w-0">
-                <CardTitle className="text-base">{investor.name}</CardTitle>
-                <p className="text-sm text-muted-foreground">{investor.firm}</p>
-              </div>
-              <Badge variant={investor.matchScore >= 80 ? "success" : "warning"} className="shrink-0">
-                {investor.matchScore}% match
-              </Badge>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <MapPin className="h-3.5 w-3.5" />
-                  <span>{investor.location}</span>
+      {error ? (
+        <div className="text-center py-10 text-destructive">Failed to load investors.</div>
+      ) : isLoading ? (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <Card key={i} className="hover:shadow-md transition-shadow">
+              <CardHeader className="flex flex-row items-start gap-4">
+                <Skeleton className="h-12 w-12 rounded-full" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-3 w-1/2" />
                 </div>
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Briefcase className="h-3.5 w-3.5" />
-                  <span>{investor.portfolioCount} portfolio companies</span>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <Skeleton className="h-3 w-full" />
+                  <Skeleton className="h-3 w-4/5" />
+                  <Skeleton className="h-3 w-2/3" />
+                  <div className="flex gap-2 pt-3">
+                    <Skeleton className="h-8 flex-1" />
+                    <Skeleton className="h-8 flex-1" />
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <DollarSign className="h-3.5 w-3.5" />
-                  <span>Check: {investor.checkRange}</span>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : investors?.length === 0 ? (
+        <div className="text-center py-16 text-muted-foreground bg-muted/20 rounded-lg border border-dashed">
+          <h3 className="text-lg font-semibold text-foreground">No investors found</h3>
+          <p className="mt-1">Try adjusting your search or filters.</p>
+        </div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {investors?.map((investor: any) => (
+            <Card key={investor.id} className="hover:shadow-md transition-shadow">
+              <CardHeader className="flex flex-row items-start gap-4">
+                <Avatar fallback={investor.user?.first_name?.[0] || "?"} className="h-12 w-12" />
+                <div className="flex-1 min-w-0">
+                  <CardTitle className="text-base">{investor.user?.first_name} {investor.user?.last_name}</CardTitle>
+                  <p className="text-sm text-muted-foreground">{investor.tagline || investor.investor_type}</p>
                 </div>
-                <div className="flex flex-wrap gap-1 pt-1">
-                  {investor.sectors.map((s) => (
-                    <Badge key={s} variant="secondary" className="text-[10px]">{s}</Badge>
-                  ))}
+                {investor.lead_investor && (
+                  <Badge variant="success" className="shrink-0">
+                    Lead
+                  </Badge>
+                )}
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <MapPin className="h-3.5 w-3.5" />
+                    <span>{investor.city || "Global"} {investor.country && `, ${investor.country}`}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Briefcase className="h-3.5 w-3.5" />
+                    <span>{investor.years_of_experience || 0} yrs experience</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <DollarSign className="h-3.5 w-3.5" />
+                    <span>Check: {formatTicketSize(investor.ticket_size_min, investor.ticket_size_max)}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1 pt-1">
+                    {(investor.preferred_industries || []).map((s: string) => (
+                      <Badge key={s} variant="secondary" className="text-[10px]">{s}</Badge>
+                    ))}
+                  </div>
+                  <div className="flex gap-2 pt-3">
+                    <Button size="sm" className="flex-1 gap-1"><MessageSquare className="h-3.5 w-3.5" /> Message</Button>
+                    <Button size="sm" variant="outline" className="flex-1 gap-1"><UserPlus className="h-3.5 w-3.5" /> Connect</Button>
+                  </div>
                 </div>
-                <div className="flex gap-2 pt-3">
-                  <Button size="sm" className="flex-1 gap-1"><MessageSquare className="h-3.5 w-3.5" /> Message</Button>
-                  <Button size="sm" variant="outline" className="flex-1 gap-1"><UserPlus className="h-3.5 w-3.5" /> Connect</Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

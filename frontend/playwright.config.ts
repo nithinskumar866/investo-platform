@@ -4,9 +4,12 @@ export default defineConfig({
   fullyParallel: false,
   reporter: 'list',
   use: {
-    trace: 'off',
-    video: 'off',
-    baseURL: 'http://localhost:3001',
+    /* Base URL to use in actions like `await page.goto('/')`. */
+    baseURL: 'http://localhost:3000',
+
+    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
+    trace: 'on',
+    screenshot: 'on',
   },
   projects: [
     {

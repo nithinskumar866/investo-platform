@@ -46,7 +46,7 @@ class InvestorMatchViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         return MatchScore.objects.filter(investor=self.request.user).select_related(
             "startup", "startup__owner", "startup__metrics",
-        ).order_by("-score")
+        ).order_by("-score", "-startup_id")
 
     def list(self, request, *args, **kwargs):
         limit = request.GET.get("limit", 50)
@@ -64,6 +64,20 @@ class InvestorMatchViewSet(viewsets.ReadOnlyModelViewSet):
                 generate_investor_matches_task.delay(request.user.id, limit=limit)
             else:
                 MatchingService.generate_matches_for_investor(request.user, limit=limit)
+
+        matches = self.get_queryset()
+        
+        # DEBUG START
+        pref = MatchingRepository.get_investor_by_user(request.user)
+        startups = MatchingRepository.get_startups_for_investor(request.user)
+        if request.GET.get('debug'):
+            return Response({
+                "pref_exists": pref is not None,
+                "startups_count": startups.count(),
+                "startups": [s.name for s in startups],
+                "matches_count": matches.count()
+            })
+        # DEBUG END
 
         matches = self.get_queryset()
         page = self.paginate_queryset(matches)

@@ -65,7 +65,7 @@ export default function FeedPage() {
           return (
             <Card key={item.id} className="transition-colors hover:bg-accent/50">
               <CardContent className="flex items-start gap-4 p-4">
-                <Avatar fallback={item.actor_email[0].toUpperCase()} />
+                <Avatar fallback={item.actor_email?.[0]?.toUpperCase() || "?"} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
