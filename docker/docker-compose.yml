@@ -12,7 +12,7 @@ services:
       POSTGRES_USER: investo
       POSTGRES_PASSWORD: investo
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U investo"]
       interval: 5s
@@ -57,7 +57,7 @@ services:
       /bin/sh -c "
       /usr/bin/mc config host add myminio http://minio:9000 minioadmin minioadmin;
       /usr/bin/mc mb myminio/investo-media --ignore-existing;
-      /usr/bin/mc policy set public myminio/investo-media;
+      /usr/bin/mc anonymous set none myminio/investo-media;
       exit 0;
       "
 

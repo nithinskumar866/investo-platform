@@ -1,6 +1,7 @@
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
+from apps.common.permissions import IsAdmin
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
@@ -159,7 +160,7 @@ class FeedViewSet(ViewSet):
             ],
         })
 
-    @action(detail=False, methods=["get"])
+    @action(detail=False, methods=["get"], permission_classes=[IsAuthenticated, IsAdmin])
     def analytics(self, request):
         analytics = ActivityFeedService.get_analytics()
         serializer = FeedAnalyticsSerializer(analytics)

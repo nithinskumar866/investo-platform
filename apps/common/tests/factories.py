@@ -35,6 +35,7 @@ from apps.search_app.models import SavedSearch, SearchHistory, SearchClickEvent
 class EntrepreneurProfileFactory(DjangoModelFactory):
     class Meta:
         model = EntrepreneurProfile
+        django_get_or_create = ("user",)
 
     user = factory.SubFactory('apps.common.tests.factories.UserFactory')
     company_name = factory.Sequence(lambda n: f"Acme Corp {n}")
@@ -58,6 +59,7 @@ class EntrepreneurProfileFactory(DjangoModelFactory):
 class InvestorProfileFactory(DjangoModelFactory):
     class Meta:
         model = InvestorProfile
+        django_get_or_create = ("user",)
 
     user = factory.SubFactory('apps.common.tests.factories.UserFactory')
     investor_type = factory.Iterator([
@@ -93,13 +95,8 @@ class UserFactory(DjangoModelFactory):
     is_active = True
     is_staff = False
     is_superuser = False
-    phone = factory.Faker('phone_number')
+    phone = factory.Sequence(lambda n: f'+1555{n:07d}')
     is_verified = True
-
-    entrepreneur_profile = factory.RelatedFactory(
-        EntrepreneurProfileFactory,
-        factory_related_name='user',
-    )
 
 
 class FounderFactory(UserFactory):
@@ -108,7 +105,6 @@ class FounderFactory(UserFactory):
 
 class InvestorFactory(UserFactory):
     role = User.Role.INVESTOR
-    entrepreneur_profile = None
 
     investor_profile = factory.RelatedFactory(
         InvestorProfileFactory,
@@ -120,7 +116,6 @@ class AdminFactory(UserFactory):
     role = User.Role.ADMIN
     is_staff = True
     is_superuser = True
-    entrepreneur_profile = None
 
 
 # ---------------------------------------------------------------------------
@@ -222,6 +217,7 @@ class StartupMetricFactory(DjangoModelFactory):
 class InvestorPreferenceFactory(DjangoModelFactory):
     class Meta:
         model = InvestorPreference
+        django_get_or_create = ("user",)
 
     user = factory.SubFactory('apps.common.tests.factories.UserFactory')
     preferred_industries = ['ai_ml', 'fintech', 'saas']
@@ -334,6 +330,14 @@ class MeetingFactory(DjangoModelFactory):
     meeting_link = factory.Faker('url')
     location = factory.Faker('city')
     notes = factory.Faker('paragraph')
+
+    @factory.post_generation
+    def participants(self, create, extracted, **kwargs):
+        """Meetings are listed through participants, as MeetingService creates them."""
+        if not create:
+            return
+        for user in (self.organizer, self.investor):
+            MeetingParticipant.objects.get_or_create(meeting=self, user=user)
 
 
 class MeetingParticipantFactory(DjangoModelFactory):
@@ -533,7 +537,7 @@ class SubscriptionPlanFactory(DjangoModelFactory):
         'Free', 'Founder Premium', 'Investor Premium', 'Enterprise',
     ][n % 4])
     slug = factory.Sequence(lambda n: [
-        'free', 'founder_premium', 'investor_premium', 'enterprise',
+        'free', 'founder-premium', 'investor-premium', 'enterprise',
     ][n % 4])
     tier = factory.Sequence(lambda n: [
         SubscriptionPlan.Tier.FREE,

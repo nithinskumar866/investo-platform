@@ -7,7 +7,10 @@ This conftest provides:
 - Authenticated API client fixtures for every user role
 - Test helpers for JWT token generation
 """
+from datetime import timedelta
+
 import pytest
+from django.utils import timezone
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -90,7 +93,9 @@ def assert_success_response(response, status_code=200):
         f"Expected {status_code}, got {response.status_code}: {response.content}"
     )
     data = response.json()
-    if "status" in data and data["status"] != "success":
+    # Only the envelope's "error" is a failure: unwrapped resources (startups,
+    # matches, ...) carry their own business "status" field, such as "draft".
+    if isinstance(data, dict) and data.get("status") == "error":
         pytest.fail(f"Response status is not success: {data}")
 
 
@@ -107,6 +112,29 @@ def assert_error_response(response, status_code=400, error_code=None):
         )
 
 
+def backdate(instance, field="created_at"):
+    """Age a row by an hour: rows created back to back can share a timestamp on Windows."""
+    type(instance).objects.filter(pk=instance.pk).update(
+        **{field: timezone.now() - timedelta(hours=1)},
+    )
+
+
 def get_data(response):
     """Extract the `data` key from a wrapped response."""
-    return response.json().get("data", response.json())
+    body = response.json()
+    return body.get("data", body) if isinstance(body, dict) else body
+
+
+def get_results(response):
+    """Return the items of a list response, whichever shape the endpoint uses.
+
+    The API has several: a bare list, {"results": [...]}, {"status", "data": [...]},
+    and paginated {"count", "results": {"status", "data": [...]}}.
+    """
+    body = response.json()
+    if isinstance(body, dict) and "results" in body:
+        body = body["results"]
+    if isinstance(body, dict) and "data" in body:
+        body = body["data"]
+    assert isinstance(body, list), f"Expected a list response, got: {body}"
+    return body

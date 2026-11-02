@@ -81,17 +81,21 @@ def startup(founder):
 @pytest.fixture
 def investor_preference(investor):
     from apps.matching.models import InvestorPreference
-    return InvestorPreference.objects.create(
+    # Saving the InvestorProfile already created this row (see sync_investor_preference).
+    pref, _ = InvestorPreference.objects.update_or_create(
         user=investor,
-        preferred_industries=["ai_ml", "saas"],
-        preferred_stages=["seed", "series_a"],
-        min_ticket_size=Decimal("100000"),
-        max_ticket_size=Decimal("1000000"),
-        preferred_geographies=["United States"],
-        risk_appetite=InvestorPreference.RiskAppetite.MODERATE,
-        investment_focus="AI ML SaaS",
-        is_active=True,
+        defaults={
+            "preferred_industries": ["ai_ml", "saas"],
+            "preferred_stages": ["seed", "series_a"],
+            "min_ticket_size": Decimal("100000"),
+            "max_ticket_size": Decimal("1000000"),
+            "preferred_geographies": ["United States"],
+            "risk_appetite": InvestorPreference.RiskAppetite.MODERATE,
+            "investment_focus": "AI ML SaaS",
+            "is_active": True,
+        },
     )
+    return pref
 
 
 @pytest.fixture

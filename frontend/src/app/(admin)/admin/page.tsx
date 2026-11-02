@@ -6,14 +6,18 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAdminDashboard, useAdminUsers, useAdminTickets } from "@/hooks/use-api"
-import { Users, Building2, TrendingUp, TrendingDown, DollarSign, Ticket, ArrowUp, ArrowDown } from "lucide-react"
+import { Users, Building2, TrendingUp, DollarSign } from "lucide-react"
 
 const metricCards = [
   { key: "total_users", label: "Total Users", icon: Users },
+  { key: "total_founders", label: "Founders", icon: Users },
+  { key: "total_investors", label: "Investors", icon: DollarSign },
   { key: "total_startups", label: "Startups", icon: Building2 },
   { key: "active_deals", label: "Active Deals", icon: TrendingUp },
-  { key: "total_investors", label: "Investors", icon: DollarSign },
-]
+  { key: "closed_deals", label: "Closed Deals", icon: TrendingUp },
+  { key: "active_subscriptions", label: "Active Subscriptions", icon: DollarSign },
+  { key: "new_matches_30d", label: "New Matches (30 days)", icon: TrendingUp },
+] as const
 
 export default function AdminDashboardPage() {
   const { data, isLoading: isOverviewLoading } = useAdminDashboard()
@@ -41,9 +45,6 @@ export default function AdminDashboardPage() {
     )
   }
 
-  // Use current_period values from platform_overview
-  const overviewData = data?.overview || {}
-
   return (
     <div className="space-y-8">
       <div>
@@ -59,15 +60,7 @@ export default function AdminDashboardPage() {
               <Icon className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="flex items-center gap-2">
-                <span className="text-2xl font-bold">{overviewData[key]?.value ?? 0}</span>
-                {overviewData[key]?.growth !== undefined && (
-                  <span className={`flex items-center text-xs ${overviewData[key]?.growth >= 0 ? "text-emerald-500" : "text-destructive"}`}>
-                    {overviewData[key]?.growth >= 0 ? <TrendingUp className="h-3 w-3 mr-0.5" /> : <TrendingDown className="h-3 w-3 mr-0.5" />}
-                    {Math.abs(overviewData[key]?.growth)}%
-                  </span>
-                )}
-              </div>
+              <span className="text-2xl font-bold" data-testid={`metric-${key}`}>{data?.[key] ?? 0}</span>
             </CardContent>
           </Card>
         ))}
@@ -94,7 +87,7 @@ export default function AdminDashboardPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge variant={u.role === "investor" ? "warning" : "default"}>{u.role}</Badge>
-                      <span className="text-xs text-muted-foreground">{new Date(u.date_joined).toLocaleDateString()}</span>
+                      <span className="text-xs text-muted-foreground">{u.date_joined ? new Date(u.date_joined).toLocaleDateString() : ""}</span>
                     </div>
                   </div>
                 ))}
@@ -129,8 +122,7 @@ export default function AdminDashboardPage() {
               ))
             )}
             <div className="flex items-center justify-between pt-2 text-sm border-t mt-2">
-              <span className="text-muted-foreground">{openTickets.length} open tickets</span>
-              <span className="font-medium text-primary">{overviewData?.new_matches_30d?.value ?? 0} new matches</span>
+              <span className="text-muted-foreground">{data?.open_tickets ?? 0} open tickets</span>
             </div>
           </CardContent>
         </Card>

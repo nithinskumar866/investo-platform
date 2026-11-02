@@ -1,14 +1,30 @@
+from contextlib import contextmanager
+
 import pytest
 import io
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import timezone
 from unittest.mock import patch
 
+from conftest import auth_header
+
 from apps.accounts.models import User
 from apps.startups.models import Startup
-from apps.data_room.models import DataRoom, DataRoomDocument, DocumentAccess, DocumentViewEvent
+from apps.data_room.models import (
+    DataRoom, DataRoomAccessRequest, DataRoomDocument, DocumentAccess, DocumentViewEvent,
+)
+from apps.matching.models import MatchScore
 from apps.data_room.services import DataRoomService, MAX_FILE_SIZE
 from apps.common.exceptions import ApplicationError
+
+
+@contextmanager
+def mute_side_effects():
+    """The services import these locally, so patch them where they are defined."""
+    with patch("apps.notifications.services.NotificationService"), \
+            patch("apps.activity_feed.services.ActivityFeedService"), \
+            patch("apps.realtime.services.RealtimeService"):
+        yield
 
 
 # ── User fixtures ─────────────────────────────────────────────────────────
@@ -164,11 +180,7 @@ class TestDataRoomService:
 
     def test_upload_document(self, data_room, founder):
         file = SimpleUploadedFile("doc.pdf", b"%PDF-1.4 test")
-        with patch.multiple(
-            "apps.data_room.services",
-            NotificationService=lambda **kw: None,
-            ActivityFeedService=lambda **kw: None,
-        ):
+        with mute_side_effects():
             doc = DataRoomService.upload_document(
                 data_room.id, founder,
                 {"title": "New Doc", "document_type": "financials"},
@@ -198,7 +210,7 @@ class TestDataRoomService:
         assert created
 
     def test_grant_document_access_duplicate(self, document_access, founder, investor):
-        with patch("apps.data_room.services.NotificationService"):
+        with patch("apps.notifications.services.NotificationService"):
             access, created = DataRoomService.grant_document_access(
                 document_access.document_id, founder, investor.id,
             )
@@ -225,7 +237,7 @@ class TestDataRoomService:
             DataRoomService.get_document_for_investor(document.id, investor)
 
     def test_record_document_view(self, document_access, investor):
-        with patch("apps.data_room.services.NotificationService"):
+        with patch("apps.notifications.services.NotificationService"):
             event = DataRoomService.record_document_view(
                 document_access.document_id, investor, duration=60,
             )
@@ -266,17 +278,25 @@ class TestDataRoomViewSet:
         assert resp.status_code == 204
 
     def test_upload_document(self, founder_client, data_room):
-        with patch.multiple(
-            "apps.data_room.services",
-            NotificationService=lambda **kw: None,
-            ActivityFeedService=lambda **kw: None,
-        ):
+        with mute_side_effects():
             resp = founder_client.post(
                 f"/api/v1/data-room/rooms/{data_room.id}/upload/",
-                {"title": "Uploaded Doc", "document_type": "financials"},
+                {
+                    "title": "Uploaded Doc",
+                    "document_type": "financials",
+                    "file": SimpleUploadedFile("doc.pdf", b"%PDF-1.4 test"),
+                },
                 format="multipart",
             )
         assert resp.status_code == 201
+
+    def test_upload_requires_a_file(self, founder_client, data_room):
+        resp = founder_client.post(
+            f"/api/v1/data-room/rooms/{data_room.id}/upload/",
+            {"title": "No File", "document_type": "financials"},
+            format="multipart",
+        )
+        assert resp.status_code == 400
 
     def test_analytics(self, founder_client):
         resp = founder_client.get("/api/v1/data-room/rooms/analytics/")
@@ -355,3 +375,153 @@ class TestInvestorDocumentViewSet:
     def test_permission_investor_only(self, founder_client):
         resp = founder_client.get("/api/v1/data-room/investor/documents/")
         assert resp.status_code == 403
+
+
+# ── Investor access rules ────────────────────────────────────────────────
+
+@pytest.fixture
+def other_founder(db):
+    return User.objects.create_user(
+        email="other-founder@example.com", password="testpass123", role="entrepreneur",
+    )
+
+
+@pytest.fixture
+def access_request(db, data_room, investor):
+    return DataRoomAccessRequest.objects.create(data_room=data_room, investor=investor)
+
+
+class TestInvestorAccessRules:
+    def _assert_no_access(self, document, investor):
+        assert document not in DataRoomService.list_shared_documents(investor)
+        with pytest.raises(ApplicationError) as exc:
+            DataRoomService.get_document_for_investor(document.id, investor)
+        assert exc.value.code == "FORBIDDEN"
+
+    def test_no_access_without_approval(self, document, investor):
+        self._assert_no_access(document, investor)
+
+    def test_no_access_while_request_is_pending(self, document, investor):
+        with mute_side_effects():
+            DataRoomService.request_room_access(document.data_room_id, investor)
+        self._assert_no_access(document, investor)
+
+    def test_a_match_alone_gives_no_access(self, document, investor, startup):
+        MatchScore.objects.create(investor=investor, startup=startup, score=90)
+        self._assert_no_access(document, investor)
+
+    def test_upload_does_not_grant_access_to_matched_investors(
+        self, data_room, founder, investor, startup,
+    ):
+        MatchScore.objects.create(investor=investor, startup=startup, score=90)
+        with mute_side_effects():
+            doc = DataRoomService.upload_document(
+                data_room.id, founder,
+                {"title": "Cap Table", "document_type": "financials"},
+                SimpleUploadedFile("cap.pdf", b"%PDF-1.4 test"),
+            )
+        assert not DocumentAccess.objects.filter(document=doc).exists()
+        self._assert_no_access(doc, investor)
+
+    def test_approve_grants_access(self, document, founder, investor, access_request):
+        with mute_side_effects():
+            decided = DataRoomService.decide_access_request(access_request.id, founder, approved=True)
+        assert decided.status == DataRoomAccessRequest.Status.APPROVED
+        assert decided.decided_at is not None
+        assert document in DataRoomService.list_shared_documents(investor)
+        assert DataRoomService.get_document_for_investor(document.id, investor) == document
+
+    def test_approval_only_covers_the_requester(self, document, founder, investor2, access_request):
+        with mute_side_effects():
+            DataRoomService.decide_access_request(access_request.id, founder, approved=True)
+        self._assert_no_access(document, investor2)
+
+    def test_deny_does_not_grant_access(self, document, founder, investor, access_request):
+        with mute_side_effects():
+            decided = DataRoomService.decide_access_request(access_request.id, founder, approved=False)
+        assert decided.status == DataRoomAccessRequest.Status.DENIED
+        self._assert_no_access(document, investor)
+
+    def test_only_the_owner_can_decide(self, founder, other_founder, investor, access_request):
+        for outsider in (other_founder, investor):
+            with pytest.raises(ApplicationError) as exc:
+                DataRoomService.decide_access_request(access_request.id, outsider, approved=True)
+            assert exc.value.code == "FORBIDDEN"
+        access_request.refresh_from_db()
+        assert access_request.status == DataRoomAccessRequest.Status.PENDING
+
+    def test_per_document_grant_covers_only_that_document(
+        self, document_access, data_room, founder, investor,
+    ):
+        other_doc = DataRoomDocument.objects.create(
+            data_room=data_room,
+            file=SimpleUploadedFile("other.pdf", b"%PDF-1.4 other"),
+            title="Other", uploaded_by=founder,
+        )
+        assert DataRoomService.get_document_for_investor(document_access.document_id, investor)
+        self._assert_no_access(other_doc, investor)
+
+    def test_private_room_blocks_grants_and_approvals(
+        self, document_access, data_room, founder, investor, access_request,
+    ):
+        with mute_side_effects():
+            DataRoomService.decide_access_request(access_request.id, founder, approved=True)
+        data_room.visibility = DataRoom.Visibility.PRIVATE
+        data_room.save()
+        self._assert_no_access(document_access.document, investor)
+
+    def test_private_room_cannot_be_requested(self, data_room, investor):
+        data_room.visibility = DataRoom.Visibility.PRIVATE
+        data_room.save()
+        with pytest.raises(ApplicationError) as exc:
+            DataRoomService.request_room_access(data_room.id, investor)
+        assert exc.value.code == "NOT_FOUND"
+
+
+class TestAccessRequestApi:
+    def test_investor_cannot_read_before_approval(self, investor_client, document):
+        resp = investor_client.get(f"/api/v1/data-room/investor/documents/{document.id}/")
+        assert resp.status_code == 403
+        assert investor_client.get("/api/v1/data-room/investor/documents/").json() == []
+
+    def test_request_then_approve_flow(self, api_client, founder, investor, document):
+        api_client.credentials(**auth_header(investor))
+        resp = api_client.post(
+            f"/api/v1/data-room/investor/rooms/{document.data_room_id}/request_access/",
+            {"message": "Please"}, format="json",
+        )
+        assert resp.status_code == 201
+        request_id = resp.json()["id"]
+        assert resp.json()["status"] == "pending"
+
+        api_client.credentials(**auth_header(founder))
+        resp = api_client.post(f"/api/v1/data-room/access-requests/{request_id}/approve/")
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "approved"
+
+        api_client.credentials(**auth_header(investor))
+        resp = api_client.get(f"/api/v1/data-room/investor/documents/{document.id}/")
+        assert resp.status_code == 200
+
+    def test_deny_keeps_documents_closed(self, api_client, founder, investor, document, access_request):
+        api_client.credentials(**auth_header(founder))
+        resp = api_client.post(f"/api/v1/data-room/access-requests/{access_request.id}/deny/")
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "denied"
+
+        api_client.credentials(**auth_header(investor))
+        resp = api_client.get(f"/api/v1/data-room/investor/documents/{document.id}/")
+        assert resp.status_code == 403
+
+    def test_other_founder_cannot_decide(self, api_client, other_founder, access_request):
+        api_client.credentials(**auth_header(other_founder))
+        resp = api_client.post(f"/api/v1/data-room/access-requests/{access_request.id}/approve/")
+        assert resp.status_code == 403
+        access_request.refresh_from_db()
+        assert access_request.status == DataRoomAccessRequest.Status.PENDING
+
+    def test_investor_cannot_decide_their_own_request(self, investor_client, access_request):
+        resp = investor_client.post(f"/api/v1/data-room/access-requests/{access_request.id}/approve/")
+        assert resp.status_code == 403
+        access_request.refresh_from_db()
+        assert access_request.status == DataRoomAccessRequest.Status.PENDING

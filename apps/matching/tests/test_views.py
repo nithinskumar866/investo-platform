@@ -8,7 +8,7 @@ from rest_framework import status
 from apps.matching.models import (
     MatchScore, SavedMatch, DismissedMatch, InteractionEvent, InvestorPreference,
 )
-from conftest import assert_success_response, assert_error_response
+from conftest import assert_success_response, assert_error_response, get_data, get_results
 
 pytestmark = pytest.mark.django_db
 
@@ -40,7 +40,7 @@ class TestInvestorMatchViewSetList:
     def test_investor_can_list_matches(self, investor_client, match_score):
         resp = investor_client.get(reverse(MATCH_LIST))
         assert_success_response(resp)
-        assert len(resp.json()["data"]) == 1
+        assert [m["id"] for m in get_results(resp)] == [match_score.id]
 
     def test_non_investor_gets_403(self, founder_client):
         resp = founder_client.get(reverse(MATCH_LIST))
@@ -66,7 +66,7 @@ class TestInvestorMatchViewSetDetail:
     def test_investor_can_get_detail(self, investor_client, match_score):
         resp = investor_client.get(reverse(MATCH_DETAIL, args=[match_score.id]))
         assert_success_response(resp)
-        assert resp.json()["data"]["id"] == match_score.id
+        assert get_data(resp)["id"] == match_score.id
 
     def test_non_investor_gets_403(self, founder_client, match_score):
         resp = founder_client.get(reverse(MATCH_DETAIL, args=[match_score.id]))
@@ -133,7 +133,7 @@ class TestEntrepreneurMatchViewSetList:
     def test_entrepreneur_can_list_matches(self, founder_client, match_score):
         resp = founder_client.get(reverse(ENT_LIST))
         assert_success_response(resp)
-        assert len(resp.json()["data"]) == 1
+        assert [m["id"] for m in get_results(resp)] == [match_score.id]
 
     def test_non_entrepreneur_gets_403(self, investor_client):
         resp = investor_client.get(reverse(ENT_LIST))
@@ -144,7 +144,7 @@ class TestEntrepreneurMatchViewSetDetail:
     def test_entrepreneur_can_get_detail(self, founder_client, match_score):
         resp = founder_client.get(reverse(ENT_DETAIL, args=[match_score.id]))
         assert_success_response(resp)
-        assert resp.json()["data"]["id"] == match_score.id
+        assert get_data(resp)["id"] == match_score.id
 
     def test_non_entrepreneur_gets_403(self, investor_client, match_score):
         resp = investor_client.get(reverse(ENT_DETAIL, args=[match_score.id]))

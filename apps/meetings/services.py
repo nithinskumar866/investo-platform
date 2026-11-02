@@ -1,4 +1,5 @@
 import logging
+import uuid
 from datetime import timedelta
 
 from django.db import transaction
@@ -11,13 +12,6 @@ from .models import Meeting, MeetingEvent
 from .repositories import MeetingRepository
 
 logger = logging.getLogger(__name__)
-
-MEETING_LINK_PROVIDERS = {
-    "zoom": "https://zoom.us/j/",
-    "google_meet": "https://meet.google.com/",
-    "teams": "https://teams.microsoft.com/l/meetup-join/",
-    "custom": "",
-}
 
 
 class MeetingService:
@@ -55,29 +49,8 @@ class MeetingService:
         return match_exists
 
     @staticmethod
-    def _validate_participants(organizer, investor):
-        if organizer == investor:
-            raise ApplicationError(
-                "Cannot schedule a meeting with yourself",
-                "SELF_MEETING", 400,
-            )
-
-        if organizer.role == investor.role:
-            raise ApplicationError(
-                "Meetings can only be scheduled between an investor and a founder",
-                "ROLE_MISMATCH", 400,
-            )
-
-    @staticmethod
     def _generate_meeting_link(meeting_type, startup=None):
-        if settings.DEBUG:
-            return ""
-
-        provider = getattr(settings, "MEETING_PROVIDER", "google_meet")
-        base = MEETING_LINK_PROVIDERS.get(provider, "")
-        if provider == "custom":
-            return getattr(settings, "MEETING_BASE_URL", "") + "/meeting/placeholder"
-        return base + "placeholder"
+        return f"https://meet.jit.si/investo-{uuid.uuid4().hex}"
 
     # ── Core operations ───────────────────────────────────────────
 
@@ -90,12 +63,27 @@ class MeetingService:
         investor_id = data.get("investor_id") or data.get("investor")
         startup_raw = data.get("startup")
 
-        try:
-            investor = User.objects.get(id=investor_id)
-        except Exception:
-            raise ApplicationError("Investor not found", "NOT_FOUND", 404)
+        if data["scheduled_end"] <= data["scheduled_start"]:
+            raise ApplicationError("Meeting must end after it starts", "INVALID_TIME", 400)
 
-        MeetingService._validate_participants(organizer, investor)
+        if organizer.role == "investor":
+            # Investors book with a startup's founder, so the startup is what's required.
+            if not startup_raw:
+                raise ApplicationError("Choose a startup to meet", "STARTUP_REQUIRED", 400)
+            investor = organizer
+            from apps.startups.repositories import StartupRepository
+            startup = StartupRepository.get_by_id(startup_raw)
+            if not startup:
+                raise ApplicationError("Startup not found", "NOT_FOUND", 404)
+            invitee = startup.owner
+        else:
+            try:
+                investor = User.objects.get(id=investor_id)
+            except Exception:
+                raise ApplicationError("Investor not found", "NOT_FOUND", 404)
+            if investor.role != "investor" or not investor.is_active:
+                raise ApplicationError("Investor not found", "NOT_FOUND", 404)
+            invitee = investor
 
         startup_obj = None
         if startup_raw:
@@ -120,10 +108,10 @@ class MeetingService:
             )
 
         if MeetingRepository.get_overlapping_meetings(
-            investor, data["scheduled_start"], data["scheduled_end"],
+            invitee, data["scheduled_start"], data["scheduled_end"],
         ):
             raise ApplicationError(
-                "The investor has an overlapping meeting at this time",
+                "The other participant has an overlapping meeting at this time",
                 "INVESTOR_OVERLAPPING", 400,
             )
 
@@ -133,7 +121,7 @@ class MeetingService:
         )
 
         meeting = MeetingRepository.create_meeting(
-            data, organizer, investor, meeting_link=meeting_link,
+            data, organizer, investor, meeting_link=meeting_link, invitee=invitee,
         )
 
         if startup_obj and meeting.startup_id is None:
@@ -149,7 +137,7 @@ class MeetingService:
 
         from apps.notifications.services import NotificationService
         NotificationService.notify(
-            recipient=investor,
+            recipient=invitee,
             notification_type="system",
             title="Meeting Scheduled",
             message=f"{organizer.email} scheduled a {meeting.get_meeting_type_display()} with you",
@@ -158,21 +146,6 @@ class MeetingService:
                 "meeting_id": meeting.id,
                 "scheduled_start": meeting.scheduled_start.isoformat(),
                 "meeting_type": meeting.meeting_type,
-            },
-        )
-
-        from apps.activity_feed.services import ActivityFeedService
-        ActivityFeedService.publish_activity(
-            actor=organizer,
-            activity_type="meeting_scheduled",
-            title=f"{organizer.email} scheduled a {meeting.get_meeting_type_display()} with {investor.email}",
-            startup=startup_obj,
-            investor=investor,
-            target_object_id=meeting.id,
-            target_object_type="meeting",
-            metadata={
-                "meeting_type": meeting.meeting_type,
-                "scheduled_start": meeting.scheduled_start.isoformat(),
             },
         )
 

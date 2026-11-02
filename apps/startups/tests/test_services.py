@@ -50,11 +50,11 @@ class TestArchiveStartup:
         startup = Startup.objects.create(owner=user, name="ActiveCo", industry="saas", stage="seed", status="active")
         StartupService.archive_startup(startup)
         startup.refresh_from_db()
-        assert startup.status == "archived"
+        assert startup.status == "closed"
         assert startup.is_visible is False
 
     def test_raises_error_if_already_archived(self, db, user):
-        startup = Startup.objects.create(owner=user, name="ArchivedCo", industry="saas", stage="seed", status="archived")
+        startup = Startup.objects.create(owner=user, name="ArchivedCo", industry="saas", stage="seed", status="closed")
         with pytest.raises(ValueError, match="Startup is already archived"):
             StartupService.archive_startup(startup)
 

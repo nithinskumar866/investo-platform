@@ -129,7 +129,7 @@ class StartupDetailSerializer(serializers.ModelSerializer):
             "is_verified", "is_visible", "status",
             "view_count", "bookmark_count",
             "created_at", "updated_at",
-            "owner_name",
+            "owner_id", "owner_name",
             "team_members", "social_links", "documents",
             "funding_rounds", "metrics",
         ]
@@ -141,6 +141,21 @@ class StartupDetailSerializer(serializers.ModelSerializer):
 
     def get_owner_name(self, obj) -> str:
         return f"{obj.owner.first_name} {obj.owner.last_name}".strip() or obj.owner.email
+
+    def to_representation(self, obj):
+        data = super().to_representation(obj)
+        request = self.context.get("request")
+        if request is None:
+            return data
+        user = request.user
+        if user.is_authenticated and (obj.owner_id == user.id or user.role == "admin"):
+            return data
+        # Private files only reach investors through data room access.
+        data.pop("documents", None)
+        if not user.is_authenticated:
+            for field in ("metrics", "valuation", "pitch_deck", "funding_rounds", "team_members", "detailed_pitch"):
+                data.pop(field, None)
+        return data
 
 
 class StartupCreateSerializer(serializers.ModelSerializer):

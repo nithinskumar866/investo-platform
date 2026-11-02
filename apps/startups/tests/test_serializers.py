@@ -24,10 +24,10 @@ class TestStartupListSerializer:
         }
         assert fields == expected
 
-    def test_owner_name_fallback_to_email(self, db):
+    def test_owner_name_fallback_to_email(self, db, user):
         from apps.startups.models import Startup
         startup = Startup.objects.create(
-            owner=None, name="NoName", industry="saas", stage="seed"
+            owner=user, name="NoName", industry="saas", stage="seed"
         )
         startup.owner.first_name = ""
         startup.owner.last_name = ""
@@ -145,7 +145,7 @@ class TestStartupDetailSerializer:
             "is_verified", "is_visible", "status",
             "view_count", "bookmark_count",
             "created_at", "updated_at",
-            "owner_name",
+            "owner_id", "owner_name",
             "team_members", "social_links", "documents",
             "funding_rounds", "metrics",
         }

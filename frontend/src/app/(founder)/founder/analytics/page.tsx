@@ -35,21 +35,20 @@ export default function AnalyticsPage() {
 
   const isLoading = isAnalyticsLoading || isChartsLoading || isFunnelLoading
 
-  // Backend should return arrays like { date: string, count: number } for daily_views
-  // Let's normalize it to exactly 12 bars for our simple UI visualization.
   const chartViews = charts?.daily_views || []
   
   // Funnel should map from backend to UI
   const meetingFunnel = funnel?.meeting_funnel || {}
-  const funnelSteps = [
-    { stage: "Matches", count: meetingFunnel.matches?.count || 0, pct: meetingFunnel.matches?.pct || 0 },
-    { stage: "Intros", count: meetingFunnel.intros?.count || 0, pct: meetingFunnel.intros?.pct || 0 },
-    { stage: "Meetings", count: meetingFunnel.meetings?.count || 0, pct: meetingFunnel.meetings?.pct || 0 },
-  ]
+  const funnelSteps = ["scheduled", "confirmed", "completed", "cancelled"].map((key) => ({
+    stage: key.charAt(0).toUpperCase() + key.slice(1),
+    count: meetingFunnel[key]?.count || 0,
+    pct: meetingFunnel[key]?.pct || 0,
+  }))
+  const investmentFunnel = funnel?.investment_funnel || {}
+  const invested = investmentFunnel.invested?.count ?? 0
+  const activeDeals = ["interested", "meeting_scheduled", "due_diligence", "negotiating", "term_sheet_sent"]
+    .reduce((sum, key) => sum + (investmentFunnel[key]?.count ?? 0), 0)
 
-  // Mock match rates until backend supports it
-  // Wait, backend matches return match trends?
-  // Let's use the actual daily_matches from charts
   const matchTrends = charts?.daily_matches || []
 
   return (
@@ -60,22 +59,22 @@ export default function AnalyticsPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Total Views" value={analytics?.kpi_cards?.total_views?.value ?? 0} growth={analytics?.kpi_cards?.total_views?.growth} icon={Eye} />
+        <StatCard label="Total Views" value={analytics?.kpi_cards?.startup_views?.value ?? 0} growth={analytics?.kpi_cards?.startup_views?.growth} icon={Eye} />
         <StatCard label="Matches" value={analytics?.kpi_cards?.matches?.value ?? 0} growth={analytics?.kpi_cards?.matches?.growth} icon={Handshake} />
-        <StatCard label="Meetings" value={analytics?.kpi_cards?.meetings?.value ?? 0} growth={analytics?.kpi_cards?.meetings?.growth} icon={CalendarCheck} />
-        <StatCard label="Investments" value={analytics?.kpi_cards?.investments?.value ?? 0} growth={analytics?.kpi_cards?.investments?.growth} icon={DollarSign} />
+        <StatCard label="Active Deals" value={activeDeals} icon={CalendarCheck} />
+        <StatCard label="Closed Investments" value={invested} icon={DollarSign} />
       </div>
 
-      {analytics?.funding_progress && (
+      {!!analytics?.funding_progress?.goal && (
         <Card>
           <CardHeader>
             <CardTitle>Funding Progress</CardTitle>
-            <CardDescription>Amount raised vs. funding goal</CardDescription>
+            <CardDescription>Amount raised vs. funding goal (first startup, dummy money)</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between text-sm mb-2">
               <span>Raised: {formatCurrency(analytics.funding_progress.raised)}</span>
-              <span>Goal: {formatCurrency(analytics.funding_progress.goal)}</span>
+              <span>Goal: {formatCurrency(analytics.funding_progress.goal ?? 0)}</span>
             </div>
             <div className="h-3 w-full rounded-full bg-primary/20">
               <div
@@ -153,8 +152,8 @@ export default function AnalyticsPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Meeting Conversion Funnel</CardTitle>
-              <CardDescription>Match → Intro → Meeting</CardDescription>
+              <CardTitle>Meeting Status</CardTitle>
+              <CardDescription>Your meetings by status</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {funnelSteps.map((step) => (

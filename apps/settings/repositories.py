@@ -4,7 +4,7 @@ from .models import PlatformSetting, FeatureFlag
 class SettingsRepository:
     @staticmethod
     def get_setting(key: str):
-        return PlatformSetting.objects.get(key=key)
+        return PlatformSetting.objects.filter(key=key).first()
 
     @staticmethod
     def get_setting_or_none(key: str):

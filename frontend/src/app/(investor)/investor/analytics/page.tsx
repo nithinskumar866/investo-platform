@@ -34,23 +34,21 @@ export default function AnalyticsPage() {
   const sectorData = analytics?.sector_distribution ?? []
   const kpiCards = analytics?.kpi_cards ?? {}
   
-  // Maps backend charts to UI format
   const matchesTrend = charts?.daily_matches || []
   const viewsTrend = charts?.daily_views || []
   
-  // We'll merge them into a single array for the Recharts line chart if they align, 
-  // or just use matches for now
   const trendData = matchesTrend.map((m: any, i: number) => ({
     date: m.date,
     matches: m.count,
     views: viewsTrend[i]?.count || 0
   }))
 
-  const pipeline: any = analytics?.deal_pipeline?.by_status || {}
+  const pipeline: Record<string, number> = analytics?.deal_pipeline?.by_status || {}
   const funnelData = [
     { metric: "Interested", value: pipeline.interested || 0 },
     { metric: "Meetings", value: pipeline.meeting_scheduled || 0 },
     { metric: "Diligence", value: pipeline.due_diligence || 0 },
+    { metric: "Negotiating", value: pipeline.negotiating || 0 },
     { metric: "Term Sheets", value: pipeline.term_sheet_sent || 0 },
     { metric: "Closed", value: pipeline.invested || 0 },
   ]
@@ -66,7 +64,7 @@ export default function AnalyticsPage() {
         {[
           { label: "Matches", value: String(kpiCards.matches?.value ?? "0"), icon: Activity, color: "text-blue-500" },
           { label: "Deals Closed", value: String(kpiCards.invested_deals?.value ?? "0"), icon: TrendingUp, color: "text-emerald-500" },
-          { label: "Response Rate", value: kpiCards.meeting_completion_rate?.value != null ? `${kpiCards.meeting_completion_rate.value}%` : "—", icon: TrendingUp, color: "text-amber-500" },
+          { label: "Meeting Completion Rate", value: kpiCards.meeting_completion_rate?.value != null ? `${kpiCards.meeting_completion_rate.value}%` : "—", icon: TrendingUp, color: "text-amber-500" },
         ].map((item) => {
           const Icon = item.icon
           return (

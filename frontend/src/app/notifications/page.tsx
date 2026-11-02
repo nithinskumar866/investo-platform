@@ -1,6 +1,6 @@
 "use client"
 
-import { useNotifications, useUnreadCount, useMarkRead } from "@/hooks/use-api"
+import { useNotifications, useUnreadCount, useMarkRead, useMarkAllRead } from "@/hooks/use-api"
 import { cn, formatRelativeTime } from "@/lib/utils"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -8,13 +8,13 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Bell, CheckCheck, Info, AlertTriangle, CheckCircle, XCircle,
-  MessageSquare, Building2, Handshake, DollarSign, Calendar, Star, ArrowRight,
+  MessageSquare, Building2, Handshake, DollarSign, Calendar, Star,
 } from "lucide-react"
 
 const typeIcons: Record<string, React.ElementType> = {
   info: Info, warning: AlertTriangle, success: CheckCircle, error: XCircle,
   message: MessageSquare, match: Handshake, investment: DollarSign,
-  meeting: Calendar, milestone: Star, startup: Building2,
+  meeting: Calendar, meetings: Calendar, milestone: Star, startup: Building2, deals: DollarSign, documents: Building2, matches: Handshake,
 }
 
 function NotificationSkeleton() {
@@ -33,6 +33,7 @@ export default function NotificationsPage() {
   const { data: notifications, isLoading } = useNotifications()
   const { data: unread } = useUnreadCount()
   const markRead = useMarkRead()
+  const markAll = useMarkAllRead()
 
   if (isLoading) {
     return (
@@ -55,6 +56,11 @@ export default function NotificationsPage() {
             <Badge variant="default" className="ml-2">{unread.count} unread</Badge>
           ) : null}
         </div>
+        {unread?.count ? (
+          <Button variant="outline" size="sm" disabled={markAll.isPending} onClick={() => markAll.mutate()}>
+            <CheckCheck className="mr-1 h-3 w-3" /> Mark all read
+          </Button>
+        ) : null}
       </div>
 
       <Card>
@@ -66,7 +72,7 @@ export default function NotificationsPage() {
         ) : (
           <div>
             {notifications?.map((notif) => {
-              const Icon = typeIcons[notif.type] || Bell
+              const Icon = typeIcons[notif.category] || typeIcons[notif.notification_type] || Bell
               return (
                 <div
                   key={notif.id}

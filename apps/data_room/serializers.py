@@ -98,7 +98,8 @@ class DataRoomDocumentDetailSerializer(serializers.ModelSerializer):
             return None
 
     def get_access_list(self, obj):
-        from apps.accounts.serializers import UserSerializer
+        if self.context.get("hide_access_list"):
+            return []
         grants = DocumentAccess.objects.filter(document=obj).select_related("investor")
         return [
             {

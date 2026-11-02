@@ -49,7 +49,7 @@ class ChatRepository:
                 "messages",
                 filter=Q(
                     messages__read_by__isnull=True,
-                ) & ~Q(messages__sender=user),
+                ) & ~Q(messages__sender=user) & ~Q(messages__message_type=Message.MessageType.SYSTEM),
             ),
         ).order_by("-updated_at")
 
@@ -106,6 +106,7 @@ class ChatRepository:
     def unread_count(user):
         return Message.objects.filter(
             ~Q(sender=user),
+            ~Q(message_type=Message.MessageType.SYSTEM),
             conversation__participants__user=user,
             conversation__is_active=True,
         ).exclude(

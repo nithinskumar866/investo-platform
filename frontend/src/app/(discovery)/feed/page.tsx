@@ -7,7 +7,7 @@ import { Avatar } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
-  Activity, Building2, UserPlus, Handshake, DollarSign, MessageSquare,
+  Activity, Building2, Handshake, DollarSign, MessageSquare,
   Calendar, TrendingUp, Star, FileText, Target, Zap,
 } from "lucide-react"
 
@@ -29,11 +29,6 @@ function FeedItemSkeleton() {
       </CardContent>
     </Card>
   )
-}
-
-function getInitialActivityIcon(type: string) {
-  const Icon = activityIcons[type] || Activity
-  return <Icon className="h-5 w-5" />
 }
 
 export default function FeedPage() {
@@ -60,14 +55,19 @@ export default function FeedPage() {
       </Card>
 
       <div className="space-y-3">
+        {!activities?.length && (
+          <Card>
+            <CardContent className="py-12 text-center text-sm text-muted-foreground">No activity yet. Events appear here as startups publish and deals progress.</CardContent>
+          </Card>
+        )}
         {activities?.map((item) => {
           const Icon = activityIcons[item.activity_type] || Activity
           return (
             <Card key={item.id} className="transition-colors hover:bg-accent/50">
               <CardContent className="flex items-start gap-4 p-4">
-                <Avatar fallback={item.actor_email?.[0]?.toUpperCase() || "?"} />
+                <Avatar fallback={item.actor_data?.name?.[0]?.toUpperCase() || "?"} />
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
                     <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
                     <span className="font-medium text-sm">{item.title}</span>
                     <Badge variant="secondary" className="ml-auto shrink-0 text-xs">

@@ -9,10 +9,11 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAdminTickets } from "@/hooks/use-api"
 import { formatRelativeTime } from "@/lib/utils"
-import { MessageSquare, User, AlertCircle, FileText } from "lucide-react"
+import { User, FileText } from "lucide-react"
 import type { SupportTicket } from "@/types/api"
 
 const priorityVariants: Record<string, "destructive" | "warning" | "default" | "secondary"> = {
+  critical: "destructive",
   high: "destructive",
   medium: "warning",
   low: "default",
@@ -45,7 +46,7 @@ export default function AdminTicketsPage() {
 
       <div className="flex flex-wrap gap-2">
         <div className="flex gap-1 rounded-lg border p-1">
-          {["all", "high", "medium", "low"].map((p) => (
+          {["all", "critical", "high", "medium", "low"].map((p) => (
             <Button
               key={p}
               variant={priorityFilter === p ? "default" : "ghost"}
@@ -57,14 +58,14 @@ export default function AdminTicketsPage() {
           ))}
         </div>
         <div className="flex gap-1 rounded-lg border p-1">
-          {["all", "open", "in_progress", "resolved", "closed"].map((s) => (
+          {["all", "open", "in_progress", "waiting_on_user", "resolved", "closed"].map((s) => (
             <Button
               key={s}
               variant={statusFilter === s ? "default" : "ghost"}
               size="sm"
               onClick={() => setStatusFilter(s)}
             >
-              {s.replace("_", " ")}
+              {s.replace(/_/g, " ")}
             </Button>
           ))}
         </div>
@@ -76,9 +77,13 @@ export default function AdminTicketsPage() {
             <Skeleton key={i} className="h-40" />
           ))}
         </div>
+      ) : !filtered?.length ? (
+        <Card>
+          <CardContent className="py-12 text-center text-sm text-muted-foreground">No support tickets match these filters.</CardContent>
+        </Card>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered?.map((ticket) => (
+          {filtered.map((ticket) => (
             <Card key={ticket.id}>
               <CardHeader>
                 <div className="flex items-start justify-between">
@@ -97,7 +102,7 @@ export default function AdminTicketsPage() {
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <Badge variant={statusVariants[ticket.status] || "default"}>
-                    {ticket.status.replace("_", " ")}
+                    {ticket.status.replace(/_/g, " ")}
                   </Badge>
                   {ticket.assigned_to && (
                     <span className="text-xs text-muted-foreground flex items-center gap-1">

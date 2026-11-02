@@ -557,3 +557,39 @@ class TestInvestorProfileService:
         assert stats["avg_ticket_min"] is not None
         assert stats["avg_ticket_max"] is not None
         assert stats["avg_experience"] is not None
+
+
+class TestOtpAttemptLimit:
+    """Five wrong guesses burn the code, so a 6-digit OTP can't be brute forced."""
+
+    @patch("apps.accounts.services.EmailService.send_verification")
+    def test_five_wrong_guesses_burn_verification_code(self, mock_send, user):
+        otp = AuthService.send_verification_email(user)
+        wrong = "000000" if otp != "000000" else "111111"
+        for _ in range(5):
+            assert AuthService.verify_email(email=user.email, otp=wrong) is False
+
+        assert AuthService.verify_email(email=user.email, otp=otp) is False
+        user.refresh_from_db()
+        assert user.is_verified is False
+
+    @patch("apps.accounts.services.EmailService.send_verification")
+    def test_four_wrong_guesses_leave_code_usable(self, mock_send, user):
+        otp = AuthService.send_verification_email(user)
+        wrong = "000000" if otp != "000000" else "111111"
+        for _ in range(4):
+            assert AuthService.verify_email(email=user.email, otp=wrong) is False
+
+        assert AuthService.verify_email(email=user.email, otp=otp) is True
+
+    def test_five_wrong_guesses_burn_password_reset_code(self, user):
+        cache_key = f"otp:reset:{user.email}"
+        otp = "123456"
+        cache.set(cache_key, AuthService._hash_otp(otp), timeout=600)
+        for _ in range(5):
+            assert AuthService.reset_password(user.email, "000000", "NewPass!2345") is False
+
+        assert cache.get(cache_key) is None
+        assert AuthService.reset_password(user.email, otp, "NewPass!2345") is False
+        user.refresh_from_db()
+        assert user.check_password("testpass123")

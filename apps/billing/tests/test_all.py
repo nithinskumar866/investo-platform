@@ -3,6 +3,8 @@ from decimal import Decimal
 from django.utils import timezone
 from datetime import timedelta
 
+from conftest import backdate
+
 from apps.accounts.models import User
 from apps.billing.models import (
     SubscriptionPlan, UserSubscription, Invoice, Coupon,
@@ -45,16 +47,17 @@ def admin_user(db):
 def plans(db):
     data = [
         ("Free", "free", "free", Decimal("0.00"), Decimal("0.00"), 0),
-        ("Founder Premium", "founder_premium", "founder_premium",
+        ("Founder Premium", "founder-premium", "founder_premium",
          Decimal("29.99"), Decimal("299.99"), 1),
-        ("Investor Premium", "investor_premium", "investor_premium",
+        ("Investor Premium", "investor-premium", "investor_premium",
          Decimal("49.99"), Decimal("499.99"), 2),
         ("Enterprise", "enterprise", "enterprise",
          Decimal("99.99"), Decimal("999.99"), 3),
     ]
     plans_list = []
     for name, slug, tier, monthly, yearly, sort in data:
-        p, _ = SubscriptionPlan.objects.get_or_create(
+        # Migration 0002_seed_plans already seeds these four slugs.
+        p, _ = SubscriptionPlan.objects.update_or_create(
             slug=slug,
             defaults={
                 "name": name,
@@ -115,7 +118,7 @@ class TestSubscriptionPlanModel:
 
     def test_plan_ordering(self, plans):
         slugs = [p.slug for p in plans]
-        assert slugs == ["free", "founder_premium", "investor_premium", "enterprise"]
+        assert slugs == ["free", "founder-premium", "investor-premium", "enterprise"]
 
 
 class TestUserSubscriptionModel:
@@ -150,12 +153,13 @@ class TestInvoiceModel:
         assert inv.status == Invoice.Status.PAID
 
     def test_invoice_ordering(self, user):
-        Invoice.objects.create(
+        older = Invoice.objects.create(
             user=user, amount=Decimal("10"), invoice_number="INV-001",
         )
         Invoice.objects.create(
             user=user, amount=Decimal("20"), invoice_number="INV-002",
         )
+        backdate(older)
         qs = Invoice.objects.all()
         assert qs.first().invoice_number == "INV-002"
 
@@ -194,8 +198,8 @@ class TestBillingService:
         assert sub.plan.tier == SubscriptionPlan.Tier.FREE
 
     def test_subscribe(self, user, premium_plan):
-        sub = BillingService.subscribe(user, "founder_premium")
-        assert sub.plan.slug == "founder_premium"
+        sub = BillingService.subscribe(user, "founder-premium")
+        assert sub.plan.slug == "founder-premium"
         assert sub.status == UserSubscription.Status.ACTIVE
         assert Invoice.objects.filter(user=user).count() == 1
 
@@ -209,13 +213,13 @@ class TestBillingService:
 
     def test_subscribe_with_coupon(self, user, premium_plan, coupon):
         sub = BillingService.subscribe(
-            user, "founder_premium", coupon_code="SAVE20",
+            user, "founder-premium", coupon_code="SAVE20",
         )
         assert sub.coupon == coupon
 
     def test_subscribe_already_subscribed(self, subscription, premium_plan):
         with pytest.raises(ApplicationError, match="Already subscribed"):
-            BillingService.subscribe(subscription.user, "founder_premium")
+            BillingService.subscribe(subscription.user, "founder-premium")
 
     def test_cancel_subscription(self, subscription):
         sub = BillingService.cancel_subscription(subscription.user)
@@ -281,7 +285,7 @@ class TestBillingViews:
     def test_subscribe(self, authenticated_client, premium_plan):
         resp = authenticated_client.post(
             "/api/v1/billing/subscribe/",
-            {"plan_slug": "founder_premium"},
+            {"plan_slug": "founder-premium"},
             format="json",
         )
         assert resp.status_code == 201

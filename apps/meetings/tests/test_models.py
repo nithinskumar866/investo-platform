@@ -1,11 +1,13 @@
 import datetime
 
 import pytest
+from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from django.utils import timezone
 
 from apps.accounts.models import User
 from apps.meetings.models import Meeting, MeetingParticipant, MeetingAvailability, MeetingEvent
+from apps.meetings.serializers import AvailabilitySlotSerializer
 from apps.common.tests.factories import UserFactory, InvestorFactory, StartupFactory, MeetingFactory
 
 pytestmark = pytest.mark.django_db
@@ -84,20 +86,22 @@ class TestMeeting:
 
 
 class TestMeetingParticipant:
-    def test_create_participant(self, user, meeting):
+    def test_create_participant(self, meeting):
         participant = MeetingParticipant.objects.create(
-            meeting=meeting, user=user,
+            meeting=meeting, user=UserFactory(),
         )
         assert participant.attendance_status == MeetingParticipant.Attendance.PENDING
 
-    def test_unique_constraint(self, user, meeting):
-        MeetingParticipant.objects.create(meeting=meeting, user=user)
+    def test_unique_constraint(self, meeting):
+        guest = UserFactory()
+        MeetingParticipant.objects.create(meeting=meeting, user=guest)
         with pytest.raises(IntegrityError):
-            MeetingParticipant.objects.create(meeting=meeting, user=user)
+            MeetingParticipant.objects.create(meeting=meeting, user=guest)
 
-    def test_str(self, user, meeting):
-        participant = MeetingParticipant.objects.create(meeting=meeting, user=user)
-        assert str(participant) == f"{user.email} - pending"
+    def test_str(self, meeting):
+        guest = UserFactory()
+        participant = MeetingParticipant.objects.create(meeting=meeting, user=guest)
+        assert str(participant) == f"{guest.email} - pending"
 
 
 class TestMeetingAvailability:
@@ -121,12 +125,21 @@ class TestMeetingAvailability:
             assert slot.day_of_week == day
 
     def test_day_of_week_out_of_range_raises(self, user):
-        with pytest.raises(IntegrityError):
-            MeetingAvailability.objects.create(
-                user=user, day_of_week=7,
-                start_time=datetime.time(9, 0),
-                end_time=datetime.time(10, 0),
-            )
+        # Range comes from the field's choices (validation), not a DB constraint.
+        slot = MeetingAvailability(
+            user=user, day_of_week=7,
+            start_time=datetime.time(9, 0),
+            end_time=datetime.time(10, 0),
+        )
+        with pytest.raises(ValidationError):
+            slot.full_clean()
+
+    def test_day_of_week_out_of_range_rejected_by_api_serializer(self):
+        serializer = AvailabilitySlotSerializer(
+            data={"day_of_week": 7, "start_time": "09:00", "end_time": "10:00"},
+        )
+        assert not serializer.is_valid()
+        assert "day_of_week" in serializer.errors
 
     def test_unique_together(self, user):
         MeetingAvailability.objects.create(

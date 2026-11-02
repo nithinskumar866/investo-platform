@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 from django.urls import reverse
 
-from conftest import get_data, assert_success_response, assert_error_response
+from conftest import get_data, assert_success_response, assert_error_response, get_results
 
 from apps.accounts.models import User
 from apps.chat.models import Conversation, Message
@@ -61,15 +61,13 @@ class TestListConversations:
     def test_returns_user_conversations(self, founder_client, conversation):
         response = founder_client.get(LIST_URL)
         assert_success_response(response)
-        data = get_data(response)
-        ids = [c["id"] for c in data["results"]]
+        ids = [c["id"] for c in get_results(response)]
         assert conversation.id in ids
 
     def test_returns_empty_list_for_no_conversations(self, founder_client):
         response = founder_client.get(LIST_URL)
         assert_success_response(response)
-        data = get_data(response)
-        assert len(data["results"]) == 0
+        assert get_results(response) == []
 
     def test_unauthenticated_returns_401(self, api_client):
         response = api_client.get(LIST_URL)

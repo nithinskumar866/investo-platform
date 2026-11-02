@@ -1,0 +1,8 @@
+.git
+.env
+frontend/node_modules
+frontend/.next
+frontend/test-results
+idea_project
+coverage_html
+__pycache__

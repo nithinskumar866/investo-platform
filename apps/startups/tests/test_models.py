@@ -5,76 +5,76 @@ from apps.startups.models import Startup, StartupMetric, StartupDocument, Startu
 
 
 class TestStartupModel:
-    def test_create_startup_auto_generates_slug(self, db):
+    def test_create_startup_auto_generates_slug(self, db, user):
         startup = Startup.objects.create(
-            owner=None,
+            owner=user,
             name="My Awesome Startup",
             industry="saas",
             stage="seed",
         )
         assert startup.slug == "my-awesome-startup"
 
-    def test_slug_unique_on_duplicate_name(self, db):
+    def test_slug_unique_on_duplicate_name(self, db, user):
         s1 = Startup.objects.create(
-            owner=None, name="Duplicate Name", industry="saas", stage="seed"
+            owner=user, name="Duplicate Name", industry="saas", stage="seed"
         )
         s2 = Startup.objects.create(
-            owner=None, name="Duplicate Name", industry="fintech", stage="idea"
+            owner=user, name="Duplicate Name", industry="fintech", stage="idea"
         )
         assert s1.slug == "duplicate-name"
         assert s2.slug == "duplicate-name-1"
 
-    def test_str_returns_name(self, db):
+    def test_str_returns_name(self, db, user):
         startup = Startup.objects.create(
-            owner=None, name="TestCo", industry="healthtech", stage="seed"
+            owner=user, name="TestCo", industry="healthtech", stage="seed"
         )
         assert str(startup) == "TestCo"
 
-    def test_default_status_is_draft(self, db):
+    def test_default_status_is_draft(self, db, user):
         startup = Startup.objects.create(
-            owner=None, name="DraftCo", industry="edtech", stage="pre_seed"
+            owner=user, name="DraftCo", industry="edtech", stage="pre_seed"
         )
         assert startup.status == Startup.Status.DRAFT
 
-    def test_default_is_visible_is_true(self, db):
+    def test_default_is_visible_is_true(self, db, user):
         startup = Startup.objects.create(
-            owner=None, name="VisibleCo", industry="saas", stage="seed"
+            owner=user, name="VisibleCo", industry="saas", stage="seed"
         )
         assert startup.is_visible is True
 
-    def test_default_is_verified_is_false(self, db):
+    def test_default_is_verified_is_false(self, db, user):
         startup = Startup.objects.create(
-            owner=None, name="UnverifiedCo", industry="saas", stage="seed"
+            owner=user, name="UnverifiedCo", industry="saas", stage="seed"
         )
         assert startup.is_verified is False
 
-    def test_default_view_count_is_zero(self, db):
+    def test_default_view_count_is_zero(self, db, user):
         startup = Startup.objects.create(
-            owner=None, name="NoViews", industry="saas", stage="seed"
+            owner=user, name="NoViews", industry="saas", stage="seed"
         )
         assert startup.view_count == 0
 
-    def test_default_bookmark_count_is_zero(self, db):
+    def test_default_bookmark_count_is_zero(self, db, user):
         startup = Startup.objects.create(
-            owner=None, name="NoBookmarks", industry="saas", stage="seed"
+            owner=user, name="NoBookmarks", industry="saas", stage="seed"
         )
         assert startup.bookmark_count == 0
 
-    def test_default_gallery_images_is_empty_list(self, db):
+    def test_default_gallery_images_is_empty_list(self, db, user):
         startup = Startup.objects.create(
-            owner=None, name="NoGallery", industry="saas", stage="seed"
+            owner=user, name="NoGallery", industry="saas", stage="seed"
         )
         assert startup.gallery_images == []
 
-    def test_default_currency_is_usd(self, db):
+    def test_default_currency_is_usd(self, db, user):
         startup = Startup.objects.create(
-            owner=None, name="USDBased", industry="saas", stage="seed"
+            owner=user, name="USDBased", industry="saas", stage="seed"
         )
         assert startup.currency == "USD"
 
-    def test_default_tagline_and_descriptions_are_blank(self, db):
+    def test_default_tagline_and_descriptions_are_blank(self, db, user):
         startup = Startup.objects.create(
-            owner=None, name="PlainCo", industry="saas", stage="seed"
+            owner=user, name="PlainCo", industry="saas", stage="seed"
         )
         assert startup.tagline == ""
         assert startup.short_description == ""
@@ -110,9 +110,9 @@ class TestStartupTeamMemberModel:
 
 
 class TestStartupMetricModel:
-    def test_one_to_one_constraint(self, db):
+    def test_one_to_one_constraint(self, db, user):
         startup = Startup.objects.create(
-            owner=None, name="MetricCo", industry="saas", stage="seed"
+            owner=user, name="MetricCo", industry="saas", stage="seed"
         )
         StartupMetric.objects.create(startup=startup)
         with pytest.raises(IntegrityError):

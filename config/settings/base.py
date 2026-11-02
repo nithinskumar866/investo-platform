@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     # Third-party
     "rest_framework",
     "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     "django_filters",
     "drf_spectacular",
@@ -126,7 +127,7 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_DIRS = [BASE_DIR / "static"]
+STATICFILES_DIRS = [BASE_DIR / "static"] if (BASE_DIR / "static").exists() else []
 
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
@@ -193,6 +194,7 @@ REST_FRAMEWORK = {
         "otp_request": config("THROTTLE_OTP", default="5/minute"),
         "resend_verification": config("THROTTLE_RESEND", default="3/hour"),
         "login_attempt": config("THROTTLE_LOGIN", default="10/minute"),
+        "auth_ip": config("THROTTLE_AUTH_IP", default="30/minute"),
     },
     "EXCEPTION_HANDLER": "apps.common.exceptions.custom_exception_handler",
     "NUM_PROXIES": 1,
@@ -240,6 +242,11 @@ CORS_ALLOWED_ORIGINS = config(
     default="http://localhost:8000,http://localhost:3000,http://localhost:3001,http://127.0.0.1:8000,http://127.0.0.1:3000,http://127.0.0.1:3001",
     cast=lambda v: [s.strip() for s in v.split(",")],
 )
+CORS_ALLOWED_ORIGIN_REGEXES = config(
+    "CORS_ALLOWED_ORIGIN_REGEXES",
+    default="",
+    cast=lambda v: [s.strip() for s in v.split(",") if s.strip()],
+)
 CORS_ALLOW_CREDENTIALS = True
 
 # CSRF
@@ -265,6 +272,16 @@ MATCHING_WEIGHTS = {
 }
 assert sum(MATCHING_WEIGHTS.values()) == 100, "Matching weights must sum to 100"
 
+# AI match explanations (local Ollama; falls back to rule-based text if it's off)
+MATCH_AI_PROVIDER = config(
+    "MATCH_AI_PROVIDER", default="apps.match_intelligence.providers.OllamaProvider",
+)
+OLLAMA_URL = config("OLLAMA_URL", default="http://localhost:11434")
+OLLAMA_MODEL = config("OLLAMA_MODEL", default="llama3.2:3b")
+OLLAMA_TIMEOUT = config("OLLAMA_TIMEOUT", default=120, cast=int)
+MATCH_EMBEDDINGS_ENABLED = config("MATCH_EMBEDDINGS_ENABLED", default=True, cast=bool)
+EMBEDDING_MODEL = config("EMBEDDING_MODEL", default="nomic-embed-text")
+
 # Celery
 CELERY_BROKER_URL = config("REDIS_URL", default="redis://localhost:6379/0")
 CELERY_RESULT_BACKEND = "django-db"
@@ -275,6 +292,13 @@ CELERY_TIMEZONE = "UTC"
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60
+CELERY_TASK_ALWAYS_EAGER = config("CELERY_TASK_ALWAYS_EAGER", default=False, cast=bool)
+CELERY_BEAT_SCHEDULE = {
+    "refresh-all-matches": {
+        "task": "apps.matching.tasks.refresh_all_matches_task",
+        "schedule": 60 * 60 * 24,
+    },
+}
 
 # Email
 EMAIL_BACKEND = config(
@@ -347,10 +371,12 @@ LOGGING = {
 # Sentry
 SENTRY_DSN = config("SENTRY_DSN", default="")
 if SENTRY_DSN:
+    import sentry_sdk
+
     sentry_sdk.init(
         dsn=SENTRY_DSN,
         traces_sample_rate=config("SENTRY_TRACES_RATE", default=0.1, cast=float),
-        send_default_pii=True,
+        send_default_pii=False,
     )
 
 # File Upload Limits

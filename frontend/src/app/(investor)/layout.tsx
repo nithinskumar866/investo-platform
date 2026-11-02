@@ -3,5 +3,5 @@
 import { MainLayout } from "@/components/layout/main-layout"
 
 export default function InvestorLayout({ children }: { children: React.ReactNode }) {
-  return <MainLayout>{children}</MainLayout>
+  return <MainLayout roles={["investor"]}>{children}</MainLayout>
 }

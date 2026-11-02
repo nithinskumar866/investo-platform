@@ -29,7 +29,7 @@ from apps.accounts.models import User, EntrepreneurProfile, InvestorProfile
 users_data = [
     {
         "email": "admin@investo.com",
-        "password": "admin123",
+        "password": os.environ.get("DEMO_ADMIN_PASSWORD", "admin123"),
         "first_name": "Admin",
         "last_name": "User",
         "role": User.Role.ADMIN,
@@ -1205,6 +1205,16 @@ for user_obj in [founder, investor, priya, elena]:
         },
     )
     print(f"  {'Created' if created else 'Updated'} notification preferences for {user_obj.email}")
+
+# ─── Real Match Scores ──────────────────
+from apps.matching.services import MatchingService
+
+print("\n=== Scoring Matches ===")
+for investor in User.objects.filter(role="investor"):
+    print(f"  Scored {len(MatchingService.generate_matches_for_investor(investor))} matches for {investor.email}")
+
+# Run `manage.py pregenerate_insights` for AI explanations; these placeholders can't be rendered.
+MatchInsight.objects.all().delete()
 
 # ─── Final Message ────────────────────────────────────────────────────────────
 print("\n" + "=" * 50)

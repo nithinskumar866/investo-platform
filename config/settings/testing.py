@@ -8,10 +8,10 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": "investo_test",
-        "USER": "investo",
-        "PASSWORD": "investo",
-        "HOST": "localhost",
-        "PORT": "5432",
+        "USER": config("DB_USER", default="investo"),
+        "PASSWORD": config("DB_PASSWORD", default="investo"),
+        "HOST": config("DB_HOST", default="localhost"),
+        "PORT": config("DB_PORT", default="5432"),
     }
 }
 
@@ -27,6 +27,7 @@ REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"] = {
     "user": None,
     "otp_request": None,
     "resend_verification": None,
+    "auth_ip": None,
     "login_attempt": None,
 }
 
@@ -50,3 +51,7 @@ CELERY_TASK_EAGER_PROPAGATES = True
 
 # Minimal email backend
 EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+
+# Never call a local model from tests
+MATCH_EMBEDDINGS_ENABLED = False
+MATCH_AI_PROVIDER = "apps.match_intelligence.providers.RuleBasedProvider"

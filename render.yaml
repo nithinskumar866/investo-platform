@@ -1,0 +1,86 @@
+# Backend hosting on Render's free plan. The frontend deploys separately to Vercel.
+# Free Postgres expires 30 days after creation, which suits a demo but not long-term hosting.
+services:
+  - type: web
+    name: investo-api
+    runtime: python
+    plan: free
+    buildCommand: >-
+      pip install -r requirements/production.txt &&
+      python manage.py collectstatic --noinput
+    startCommand: >-
+      python manage.py migrate --noinput &&
+      python manage.py seed_if_empty &&
+      gunicorn config.wsgi:application --bind 0.0.0.0:$PORT
+      --workers 2 --threads 2 --worker-class gthread --timeout 120
+    healthCheckPath: /health/db/
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.10
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings.production
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DEMO_ADMIN_PASSWORD
+        generateValue: true
+      - key: DJANGO_ALLOWED_HOSTS
+        value: .onrender.com
+      - key: CORS_ALLOWED_ORIGIN_REGEXES
+        value: ^https://[a-z0-9-]+\.vercel\.app$
+      - key: STORAGE_BACKEND
+        value: local
+      - key: SERVE_MEDIA
+        value: "true"
+      # No Ollama in the cloud, and the free plan has no background worker.
+      - key: MATCH_AI_PROVIDER
+        value: apps.match_intelligence.providers.RuleBasedProvider
+      - key: MATCH_EMBEDDINGS_ENABLED
+        value: "false"
+      - key: CELERY_TASK_ALWAYS_EAGER
+        value: "true"
+      # Visitors can share a proxy address, so per-IP limits are looser here.
+      - key: THROTTLE_ANON
+        value: 2000/hour
+      - key: THROTTLE_AUTH_IP
+        value: 300/minute
+      - key: DB_HOST
+        fromDatabase:
+          name: investo-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: investo-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: investo-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: investo-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: investo-db
+          property: password
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: investo-redis
+          property: connectionString
+      - key: CHANNEL_LAYER_URL
+        fromService:
+          type: keyvalue
+          name: investo-redis
+          property: connectionString
+
+  - type: keyvalue
+    name: investo-redis
+    plan: free
+    ipAllowList: []
+
+databases:
+  - name: investo-db
+    plan: free
+    databaseName: investo
+    user: investo

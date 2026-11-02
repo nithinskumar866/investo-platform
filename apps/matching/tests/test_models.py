@@ -13,8 +13,8 @@ from apps.matching.models import (
 
 
 class TestInvestorPreference:
-    def test_defaults(self, investor):
-        pref = InvestorPreference.objects.create(user=investor)
+    def test_defaults(self, user):
+        pref = InvestorPreference.objects.create(user=user)
         assert pref.preferred_industries == []
         assert pref.preferred_stages == []
         assert pref.preferred_geographies == []

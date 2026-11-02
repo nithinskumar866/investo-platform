@@ -1,45 +1,49 @@
 "use client"
 
-import { useStartups, useInvestments } from "@/hooks/use-api"
-import { formatCurrency, formatRelativeTime } from "@/lib/utils"
+import Link from "next/link"
+import { useStartups, useTrendingFeed } from "@/hooks/use-api"
+import { formatRelativeTime } from "@/lib/utils"
+import { stageLabel } from "@/lib/constants"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { TrendingUp, Building2, Users, Briefcase, ArrowUpRight } from "lucide-react"
+import { Activity, ArrowUpRight, Bookmark, Eye, TrendingUp } from "lucide-react"
+import type { Startup } from "@/types/api"
 
-function TrendingSkeleton() {
+const PUBLIC = ["active", "funded"]
+
+function Ranked({ rows, metric }: { rows: Startup[]; metric: (s: Startup) => string }) {
+  if (rows.length === 0) return <p className="py-6 text-center text-sm text-muted-foreground">Nothing to rank yet.</p>
   return (
-    <div className="space-y-4">
-      <Skeleton className="h-6 w-40" />
-      {Array.from({ length: 3 }).map((_, i) => (
-        <Card key={i}>
-          <CardContent className="p-4">
-            <Skeleton className="mb-2 h-5 w-3/4" />
-            <Skeleton className="h-3 w-1/2" />
-          </CardContent>
-        </Card>
+    <div className="space-y-3">
+      {rows.map((s, i) => (
+        <Link key={s.id} href={`/startup/${s.id}`} className="block">
+          <Card className="transition-colors hover:bg-accent/10">
+            <CardContent className="flex items-center gap-3 p-4">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">{i + 1}</span>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="truncate text-sm font-medium">{s.name}</p>
+                  <Badge variant="secondary" className="shrink-0 text-xs">{stageLabel(s.stage)}</Badge>
+                </div>
+                <p className="truncate text-xs text-muted-foreground">{metric(s)}</p>
+              </div>
+              <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+            </CardContent>
+          </Card>
+        </Link>
       ))}
     </div>
   )
 }
 
 export default function TrendingPage() {
-  const { data: startups, isLoading: startupsLoading } = useStartups()
-  const { data: investments, isLoading: investmentsLoading } = useInvestments()
+  const { data: byViews, isLoading: viewsLoading } = useStartups({ ordering: "-view_count", per_page: 50 })
+  const { data: feed, isLoading: feedLoading } = useTrendingFeed()
 
-  if (startupsLoading || investmentsLoading) {
-    return (
-      <div className="grid gap-6 lg:grid-cols-3">
-        <TrendingSkeleton />
-        <TrendingSkeleton />
-        <TrendingSkeleton />
-      </div>
-    )
-  }
-
-  const topStartups = startups?.slice(0, 5) || []
-  const topInvestors = investments?.slice(0, 5) || []
-  const topOpportunities = investments?.filter((i) => i.status === "pending").slice(0, 5) || []
+  const published = (byViews ?? []).filter((s) => PUBLIC.includes(s.status))
+  const mostViewed = published.slice(0, 5)
+  const mostSaved = [...published].filter((s) => s.bookmark_count > 0).sort((a, b) => b.bookmark_count - a.bookmark_count).slice(0, 5)
 
   return (
     <div className="space-y-6">
@@ -54,81 +58,33 @@ export default function TrendingPage() {
 
       <div className="grid gap-6 lg:grid-cols-3">
         <section>
-          <div className="mb-3 flex items-center gap-2">
-            <Building2 className="h-4 w-4 text-primary" />
-            <h2 className="font-semibold">Popular Startups</h2>
-          </div>
-          <div className="space-y-3">
-            {topStartups.map((s, i) => (
-              <Card key={s.id} className="transition-colors hover:bg-accent/50">
-                <CardContent className="flex items-center gap-3 p-4">
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-                    {i + 1}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium truncate">{s.name}</p>
-                      <Badge variant="secondary" className="text-xs">{s.stage}</Badge>
-                    </div>
-                    <p className="text-xs text-muted-foreground truncate">{s.tagline}</p>
-                  </div>
-                  <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <h2 className="mb-3 flex items-center gap-2 font-semibold"><Eye className="h-4 w-4 text-primary" /> Most viewed startups</h2>
+          {viewsLoading ? <Skeleton className="h-48" /> : <Ranked rows={mostViewed} metric={(s) => `${s.view_count} views`} />}
         </section>
 
         <section>
-          <div className="mb-3 flex items-center gap-2">
-            <Users className="h-4 w-4 text-primary" />
-            <h2 className="font-semibold">Active Investors</h2>
-          </div>
-          <div className="space-y-3">
-            {topInvestors.map((inv, i) => (
-              <Card key={inv.id} className="transition-colors hover:bg-accent/50">
-                <CardContent className="flex items-center gap-3 p-4">
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-                    {i + 1}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium">{inv.startup_name || `Investor ${inv.investor}`}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {inv.amount_offered ? formatCurrency(inv.amount_offered) : "Undisclosed"} offered
-                    </p>
-                  </div>
-                  <Badge variant={inv.status === "accepted" ? "success" : "warning"} className="text-xs">
-                    {inv.status}
-                  </Badge>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <h2 className="mb-3 flex items-center gap-2 font-semibold"><Bookmark className="h-4 w-4 text-primary" /> Most bookmarked startups</h2>
+          {viewsLoading ? <Skeleton className="h-48" /> : <Ranked rows={mostSaved} metric={(s) => `${s.bookmark_count} bookmarks`} />}
         </section>
 
         <section>
-          <div className="mb-3 flex items-center gap-2">
-            <Briefcase className="h-4 w-4 text-primary" />
-            <h2 className="font-semibold">Top Opportunities</h2>
-          </div>
-          <div className="space-y-3">
-            {topOpportunities.map((opp, i) => (
-              <Card key={opp.id} className="transition-colors hover:bg-accent/50">
-                <CardContent className="flex items-center gap-3 p-4">
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-                    {i + 1}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium">{opp.startup_name || `Opportunity #${opp.id}`}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {opp.amount_requested ? formatCurrency(opp.amount_requested) : "Undisclosed"} requested
-                    </p>
-                  </div>
-                  <span className="text-xs text-muted-foreground shrink-0">{formatRelativeTime(opp.created_at)}</span>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <h2 className="mb-3 flex items-center gap-2 font-semibold"><Activity className="h-4 w-4 text-primary" /> Trending activity</h2>
+          {feedLoading ? (
+            <Skeleton className="h-48" />
+          ) : !feed?.length ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">No recent activity.</p>
+          ) : (
+            <div className="space-y-3">
+              {feed.map((item) => (
+                <Card key={item.id}>
+                  <CardContent className="p-4">
+                    <p className="text-sm font-medium">{item.title}</p>
+                    <p className="text-xs text-muted-foreground">{formatRelativeTime(item.created_at)}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </section>
       </div>
     </div>

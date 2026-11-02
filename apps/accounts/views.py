@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 from drf_spectacular.utils import extend_schema, OpenApiParameter
-from apps.common.throttles import OTPRequestThrottle, ResendVerificationThrottle, LoginRateThrottle
+from apps.common.throttles import AuthIPThrottle, OTPRequestThrottle, ResendVerificationThrottle, LoginRateThrottle
 
 from .serializers import (
     RegistrationSerializer,
@@ -87,7 +87,7 @@ def register(request):
 )
 @api_view(["POST"])
 @permission_classes([AllowAny])
-@throttle_classes([LoginRateThrottle])
+@throttle_classes([LoginRateThrottle, AuthIPThrottle])
 def login(request):
     """
     Custom login that returns JWT tokens.
@@ -212,7 +212,7 @@ def me(request):
 )
 @api_view(["POST"])
 @permission_classes([AllowAny])
-@throttle_classes([OTPRequestThrottle])
+@throttle_classes([OTPRequestThrottle, AuthIPThrottle])
 def verify_email(request):
     serializer = EmailVerificationSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
@@ -279,7 +279,7 @@ def resend_verification(request):
 )
 @api_view(["POST"])
 @permission_classes([AllowAny])
-@throttle_classes([OTPRequestThrottle])
+@throttle_classes([OTPRequestThrottle, AuthIPThrottle])
 def forgot_password(request):
     serializer = PasswordResetRequestSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
@@ -298,7 +298,7 @@ def forgot_password(request):
 )
 @api_view(["POST"])
 @permission_classes([AllowAny])
-@throttle_classes([OTPRequestThrottle])
+@throttle_classes([OTPRequestThrottle, AuthIPThrottle])
 def reset_password(request):
     serializer = PasswordResetConfirmSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)

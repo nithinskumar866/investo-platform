@@ -90,8 +90,10 @@ class InvestmentOpportunityDetailSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
             "activities",
+            "recent_activities",
+            "founder_accepted_at",
         ]
-        read_only_fields = ["id", "created_at", "updated_at"]
+        read_only_fields = ["id", "created_at", "updated_at", "founder_accepted_at"]
 
     def get_startup(self, obj):
         return {

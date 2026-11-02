@@ -1,8 +1,12 @@
+from contextlib import contextmanager
+
 import pytest
 from decimal import Decimal
 from django.utils import timezone
 from rest_framework import status
 from unittest.mock import patch
+
+from conftest import backdate
 
 from apps.accounts.models import User
 from apps.startups.models import Startup
@@ -13,6 +17,15 @@ from apps.investments.serializers import (
     InvestmentOpportunityDetailSerializer,
 )
 from apps.common.exceptions import ApplicationError
+
+
+@contextmanager
+def mute_side_effects():
+    """The services import these locally, so patch them where they are defined."""
+    with patch("apps.notifications.services.NotificationService"), \
+            patch("apps.activity_feed.services.ActivityFeedService"), \
+            patch("apps.realtime.services.RealtimeService"):
+        yield
 
 
 # ── User fixtures ─────────────────────────────────────────────────────────
@@ -144,6 +157,7 @@ class TestInvestmentActivityModel:
         a2 = InvestmentActivity.objects.create(
             opportunity=opportunity, actor=investor, action="second",
         )
+        backdate(a1, "timestamp")
         qs = InvestmentActivity.objects.all()
         assert qs.first() == a2
 
@@ -152,12 +166,7 @@ class TestInvestmentActivityModel:
 
 class TestInvestmentService:
     def test_create_opportunity(self, startup, investor):
-        with patch.multiple(
-            "apps.investments.services",
-            NotificationService=lambda **kw: None,
-            ActivityFeedService=lambda **kw: None,
-            RealtimeService=lambda **kw: None,
-        ):
+        with mute_side_effects():
             opp = InvestmentService.create_opportunity(
                 investor=investor,
                 startup_id=startup.id,
@@ -169,12 +178,7 @@ class TestInvestmentService:
 
     def test_create_duplicate_raises(self, opportunity, investor):
         with pytest.raises(ApplicationError, match="already exists"):
-            with patch.multiple(
-                "apps.investments.services",
-                NotificationService=lambda **kw: None,
-                ActivityFeedService=lambda **kw: None,
-                RealtimeService=lambda **kw: None,
-            ):
+            with mute_side_effects():
                 InvestmentService.create_opportunity(
                     investor=investor,
                     startup_id=opportunity.startup_id,
@@ -182,11 +186,7 @@ class TestInvestmentService:
                 )
 
     def test_move_stage_valid(self, opportunity, investor):
-        with patch.multiple(
-            "apps.investments.services",
-            NotificationService=lambda **kw: None,
-            RealtimeService=lambda **kw: None,
-        ):
+        with mute_side_effects():
             opp = InvestmentService.move_stage(
                 opportunity.id, investor,
                 InvestmentOpportunity.Status.MEETING_SCHEDULED,
@@ -201,11 +201,7 @@ class TestInvestmentService:
             )
 
     def test_schedule_meeting(self, opportunity, investor):
-        with patch.multiple(
-            "apps.investments.services",
-            NotificationService=lambda **kw: None,
-            RealtimeService=lambda **kw: None,
-        ):
+        with mute_side_effects():
             opp = InvestmentService.schedule_meeting(
                 opportunity.id, investor,
                 {"meeting_url": "http://meet.google.com/abc"},
@@ -223,27 +219,20 @@ class TestInvestmentService:
     def test_send_term_sheet(self, opportunity, investor):
         opportunity.status = InvestmentOpportunity.Status.NEGOTIATING
         opportunity.save()
-        with patch.multiple(
-            "apps.investments.services",
-            NotificationService=lambda **kw: None,
-            RealtimeService=lambda **kw: None,
-        ):
+        with mute_side_effects():
             opp = InvestmentService.send_term_sheet(
                 opportunity.id, investor,
                 {"amount_offered": "450000", "equity_offered": "8"},
             )
+        opp.refresh_from_db()
         assert opp.status == InvestmentOpportunity.Status.TERM_SHEET_SENT
         assert opp.amount_offered == Decimal("450000.00")
 
     def test_mark_invested(self, opportunity, investor):
         opportunity.status = InvestmentOpportunity.Status.TERM_SHEET_SENT
+        opportunity.founder_accepted_at = timezone.now()
         opportunity.save()
-        with patch.multiple(
-            "apps.investments.services",
-            NotificationService=lambda **kw: None,
-            ActivityFeedService=lambda **kw: None,
-            RealtimeService=lambda **kw: None,
-        ):
+        with mute_side_effects():
             opp = InvestmentService.mark_invested(
                 opportunity.id, investor,
                 {"amount_offered": "450000", "equity_offered": "8"},
@@ -252,22 +241,27 @@ class TestInvestmentService:
         assert opp.startup.status == "funded"
 
     def test_reject_deal(self, opportunity, investor):
-        with patch.multiple(
-            "apps.investments.services",
-            NotificationService=lambda **kw: None,
-            RealtimeService=lambda **kw: None,
-        ):
+        with mute_side_effects():
             opp = InvestmentService.reject_deal(
-                opportunity.id, investor, reason="Not a fit",
+                opportunity.id, opportunity.startup.owner, reason="Not a fit",
             )
         assert opp.status == InvestmentOpportunity.Status.REJECTED
 
+    def test_investor_cannot_reject_deal(self, opportunity, investor):
+        with pytest.raises(ApplicationError, match="Not your startup"):
+            InvestmentService.reject_deal(opportunity.id, investor)
+
+    def test_new_term_sheet_needs_fresh_acceptance(self, opportunity, investor):
+        S = InvestmentOpportunity.Status
+        opportunity.status = S.NEGOTIATING
+        opportunity.founder_accepted_at = timezone.now()
+        opportunity.save()
+        with mute_side_effects():
+            opp = InvestmentService.send_term_sheet(opportunity.id, investor, {"amount_offered": Decimal("100")})
+        assert opp.founder_accepted_at is None
+
     def test_withdraw_deal(self, opportunity, investor):
-        with patch.multiple(
-            "apps.investments.services",
-            NotificationService=lambda **kw: None,
-            RealtimeService=lambda **kw: None,
-        ):
+        with mute_side_effects():
             opp = InvestmentService.withdraw_deal(
                 opportunity.id, investor, reason="Changed mind",
             )
@@ -277,7 +271,7 @@ class TestInvestmentService:
         opportunity.status = InvestmentOpportunity.Status.INVESTED
         opportunity.save()
         with pytest.raises(ApplicationError, match="already closed"):
-            InvestmentService.reject_deal(opportunity.id, investor)
+            InvestmentService.reject_deal(opportunity.id, opportunity.startup.owner)
 
     def test_get_investor_dashboard(self, opportunity, investor):
         data = InvestmentService.get_investor_dashboard(investor)
@@ -307,12 +301,7 @@ class TestInvestorPipelineViewSet:
         assert "data" in data or "results" in data
 
     def test_create_opportunity(self, investor_client, startup):
-        with patch.multiple(
-            "apps.investments.services",
-            NotificationService=lambda **kw: None,
-            ActivityFeedService=lambda **kw: None,
-            RealtimeService=lambda **kw: None,
-        ):
+        with mute_side_effects():
             resp = investor_client.post(
                 "/api/v1/investments/pipeline/investor/",
                 {"startup_id": startup.id, "amount_requested": "500000"},
@@ -327,11 +316,7 @@ class TestInvestorPipelineViewSet:
         assert resp.status_code == 200
 
     def test_move_stage(self, investor_client, opportunity):
-        with patch.multiple(
-            "apps.investments.services",
-            NotificationService=lambda **kw: None,
-            RealtimeService=lambda **kw: None,
-        ):
+        with mute_side_effects():
             resp = investor_client.post(
                 f"/api/v1/investments/pipeline/investor/{opportunity.id}/move_stage/",
                 {"status": "meeting_scheduled"},
@@ -340,11 +325,7 @@ class TestInvestorPipelineViewSet:
         assert resp.status_code == 200
 
     def test_schedule_meeting(self, investor_client, opportunity):
-        with patch.multiple(
-            "apps.investments.services",
-            NotificationService=lambda **kw: None,
-            RealtimeService=lambda **kw: None,
-        ):
+        with mute_side_effects():
             resp = investor_client.post(
                 f"/api/v1/investments/pipeline/investor/{opportunity.id}/schedule_meeting/",
                 {"meeting_url": "http://meet.google.com/abc"},
@@ -355,11 +336,7 @@ class TestInvestorPipelineViewSet:
     def test_send_term_sheet(self, investor_client, opportunity):
         opportunity.status = InvestmentOpportunity.Status.NEGOTIATING
         opportunity.save()
-        with patch.multiple(
-            "apps.investments.services",
-            NotificationService=lambda **kw: None,
-            RealtimeService=lambda **kw: None,
-        ):
+        with mute_side_effects():
             resp = investor_client.post(
                 f"/api/v1/investments/pipeline/investor/{opportunity.id}/send_term_sheet/",
                 {"amount_offered": "450000"},
@@ -369,13 +346,9 @@ class TestInvestorPipelineViewSet:
 
     def test_mark_invested(self, investor_client, opportunity):
         opportunity.status = InvestmentOpportunity.Status.TERM_SHEET_SENT
+        opportunity.founder_accepted_at = timezone.now()
         opportunity.save()
-        with patch.multiple(
-            "apps.investments.services",
-            NotificationService=lambda **kw: None,
-            ActivityFeedService=lambda **kw: None,
-            RealtimeService=lambda **kw: None,
-        ):
+        with mute_side_effects():
             resp = investor_client.post(
                 f"/api/v1/investments/pipeline/investor/{opportunity.id}/mark_invested/",
                 {"amount_offered": "450000"},
@@ -384,24 +357,16 @@ class TestInvestorPipelineViewSet:
         assert resp.status_code == 200
 
     def test_reject(self, investor_client, opportunity):
-        with patch.multiple(
-            "apps.investments.services",
-            NotificationService=lambda **kw: None,
-            RealtimeService=lambda **kw: None,
-        ):
+        with mute_side_effects():
             resp = investor_client.post(
                 f"/api/v1/investments/pipeline/investor/{opportunity.id}/reject/",
                 {"reason": "Not a fit"},
                 format="json",
             )
-        assert resp.status_code == 200
+        assert resp.status_code == 403
 
     def test_withdraw(self, investor_client, opportunity):
-        with patch.multiple(
-            "apps.investments.services",
-            NotificationService=lambda **kw: None,
-            RealtimeService=lambda **kw: None,
-        ):
+        with mute_side_effects():
             resp = investor_client.post(
                 f"/api/v1/investments/pipeline/investor/{opportunity.id}/withdraw/",
                 {"reason": "Changed mind"},
@@ -438,11 +403,9 @@ class TestStartupPipelineViewSet:
         assert resp.status_code == 200
 
     def test_move_stage(self, founder_client, opportunity):
-        with patch.multiple(
-            "apps.investments.services",
-            NotificationService=lambda **kw: None,
-            RealtimeService=lambda **kw: None,
-        ):
+        opportunity.status = InvestmentOpportunity.Status.MEETING_SCHEDULED
+        opportunity.save()
+        with mute_side_effects():
             resp = founder_client.post(
                 f"/api/v1/investments/pipeline/startup/{opportunity.id}/move_stage/"
                 f"?startup_id={opportunity.startup_id}",
@@ -472,3 +435,93 @@ class TestStartupPipelineViewSet:
             f"/api/v1/investments/pipeline/startup/?startup_id=1",
         )
         assert resp.status_code == 403
+
+
+# ── Deal stage rules ─────────────────────────────────────────────────────
+
+class TestMoveStageRules:
+    """Term sheet and close have their own actions; each side has its own exit."""
+
+    @pytest.mark.parametrize("target,start", [
+        ("term_sheet_sent", "negotiating"),
+        ("invested", "term_sheet_sent"),
+    ])
+    @pytest.mark.parametrize("who", ["investor", "founder"])
+    def test_refuses_stages_with_dedicated_actions(
+        self, opportunity, investor, founder, target, start, who,
+    ):
+        opportunity.status = start
+        opportunity.save()
+        actor = investor if who == "investor" else founder
+        with pytest.raises(ApplicationError) as exc:
+            InvestmentService.move_stage(opportunity.id, actor, target)
+        assert exc.value.code == "INVALID_TRANSITION"
+        opportunity.refresh_from_db()
+        assert opportunity.status == start
+
+    def test_investor_cannot_set_rejected(self, opportunity, investor):
+        with pytest.raises(ApplicationError) as exc:
+            InvestmentService.move_stage(opportunity.id, investor, "rejected")
+        assert exc.value.code == "INVALID_TRANSITION"
+        opportunity.refresh_from_db()
+        assert opportunity.status == "interested"
+
+    def test_founder_cannot_set_withdrawn(self, opportunity, founder):
+        with pytest.raises(ApplicationError) as exc:
+            InvestmentService.move_stage(opportunity.id, founder, "withdrawn")
+        assert exc.value.code == "INVALID_TRANSITION"
+        opportunity.refresh_from_db()
+        assert opportunity.status == "interested"
+
+    def test_founder_can_set_rejected(self, opportunity, founder):
+        with mute_side_effects():
+            opp = InvestmentService.move_stage(opportunity.id, founder, "rejected")
+        assert opp.status == "rejected"
+
+    def test_investor_can_set_withdrawn(self, opportunity, investor):
+        with mute_side_effects():
+            opp = InvestmentService.move_stage(opportunity.id, investor, "withdrawn")
+        assert opp.status == "withdrawn"
+
+    def test_refused_over_the_api(self, investor_client, opportunity):
+        opportunity.status = InvestmentOpportunity.Status.NEGOTIATING
+        opportunity.save()
+        resp = investor_client.post(
+            f"/api/v1/investments/pipeline/investor/{opportunity.id}/move_stage/",
+            {"status": "term_sheet_sent"},
+            format="json",
+        )
+        assert resp.status_code == 400
+
+
+class TestTermSheetAcceptance:
+    @pytest.fixture
+    def sent(self, opportunity):
+        opportunity.status = InvestmentOpportunity.Status.TERM_SHEET_SENT
+        opportunity.save()
+        return opportunity
+
+    def test_mark_invested_requires_founder_acceptance(self, sent, investor):
+        with pytest.raises(ApplicationError) as exc:
+            InvestmentService.mark_invested(sent.id, investor, {})
+        assert exc.value.code == "NOT_ACCEPTED"
+        sent.refresh_from_db()
+        assert sent.status == InvestmentOpportunity.Status.TERM_SHEET_SENT
+        assert sent.startup.status != "funded"
+
+    def test_accept_then_mark_invested(self, sent, founder, investor):
+        with mute_side_effects():
+            accepted = InvestmentService.accept_term_sheet(sent.id, founder)
+            assert accepted.founder_accepted_at is not None
+            closed = InvestmentService.mark_invested(sent.id, investor, {})
+        assert closed.status == InvestmentOpportunity.Status.INVESTED
+
+    def test_investor_cannot_accept_own_term_sheet(self, sent, investor):
+        with pytest.raises(ApplicationError) as exc:
+            InvestmentService.accept_term_sheet(sent.id, investor)
+        assert exc.value.code == "FORBIDDEN"
+
+    def test_accept_requires_term_sheet_stage(self, opportunity, founder):
+        with pytest.raises(ApplicationError) as exc:
+            InvestmentService.accept_term_sheet(opportunity.id, founder)
+        assert exc.value.code == "INVALID_STATE"

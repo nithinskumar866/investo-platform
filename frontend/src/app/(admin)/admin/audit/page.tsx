@@ -6,19 +6,23 @@ import {
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
+import { Select } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAdminAuditLogs } from "@/hooks/use-api"
 import { formatRelativeTime } from "@/lib/utils"
-import { Search, Filter, Clock } from "lucide-react"
+import { Search, Clock } from "lucide-react"
 import type { AuditLog } from "@/types/api"
 
-const actionVariants: Record<string, "default" | "destructive" | "warning" | "success" | "secondary"> = {
-  create: "success",
-  update: "warning",
-  delete: "destructive",
-  login: "default",
-  logout: "secondary",
+const ACTION_TYPES = [
+  "user_suspend", "user_restore", "user_ban", "startup_approve", "startup_reject", "startup_archive",
+  "startup_flag", "verification_change", "subscription_change", "ticket_action",
+]
+
+function actionVariant(action: string): "default" | "destructive" | "warning" | "success" {
+  if (/approve|restore/.test(action)) return "success"
+  if (/ban|suspend|reject/.test(action)) return "destructive"
+  if (/flag|archive/.test(action)) return "warning"
+  return "default"
 }
 
 export default function AdminAuditPage() {
@@ -30,7 +34,7 @@ export default function AdminAuditPage() {
     if (!searchQuery) return true
     const q = searchQuery.toLowerCase()
     return (
-      log.actor_email.toLowerCase().includes(q) ||
+      (log.actor_email ?? "").toLowerCase().includes(q) ||
       log.target_repr.toLowerCase().includes(q) ||
       log.description.toLowerCase().includes(q)
     )
@@ -47,24 +51,21 @@ export default function AdminAuditPage() {
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
+            aria-label="Search audit logs"
             placeholder="Search actor, target, or description..."
             className="pl-9"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <div className="flex gap-2">
-          {["all", "create", "update", "delete", "login", "logout"].map((action) => (
-            <Button
-              key={action}
-              variant={actionFilter === action ? "default" : "outline"}
-              size="sm"
-              onClick={() => setActionFilter(action)}
-            >
-              {action.charAt(0).toUpperCase() + action.slice(1)}
-            </Button>
-          ))}
-        </div>
+        <Select
+          aria-label="Filter by action"
+          className="sm:w-64"
+          value={actionFilter === "all" ? "" : actionFilter}
+          onChange={(e) => setActionFilter(e.target.value || "all")}
+          placeholder="All actions"
+          options={ACTION_TYPES.map((a) => ({ value: a, label: a.replace(/_/g, " ") }))}
+        />
       </div>
 
       {isLoading ? (
@@ -83,13 +84,13 @@ export default function AdminAuditPage() {
                   <div>
                     <p className="text-sm font-medium">{log.description}</p>
                     <p className="text-xs text-muted-foreground">
-                      {log.actor_email} &middot; {log.target_type}: {log.target_repr}
+                      {log.actor_email ?? "System"} &middot; {log.target_type}: {log.target_repr}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <Badge variant={actionVariants[log.action_type] || "default"}>
-                    {log.action_type}
+                  <Badge variant={actionVariant(log.action_type)}>
+                    {log.action_type.replace(/_/g, " ")}
                   </Badge>
                   <span className="text-xs text-muted-foreground whitespace-nowrap">
                     {formatRelativeTime(log.created_at)}

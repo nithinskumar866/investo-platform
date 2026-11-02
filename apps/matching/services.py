@@ -9,6 +9,7 @@ from django.utils import timezone
 from apps.startups.models import Startup
 from apps.accounts.models import InvestorProfile
 from apps.accounts.repositories import InvestorProfileRepository
+from .embeddings import similarity_score
 from .models import InvestorPreference, MatchScore
 from .repositories import MatchingRepository
 
@@ -261,6 +262,8 @@ class ScoringEngine:
         Matches investment_focus keywords against startup name, tagline,
         short_description, and description.
         Uses both InvestorPreference and InvestorProfile focus fields.
+        Compares meaning with embeddings when available, so "clean energy"
+        can match "solar"; otherwise matches on shared keywords alone.
         """
         focus = (pref.investment_focus or "").lower()
         if profile and profile.investment_focus:
@@ -279,6 +282,10 @@ class ScoringEngine:
             startup.short_description or "",
             startup.description or "",
         ])).lower()
+
+        semantic = similarity_score(focus, text_fields)
+        if semantic is not None:
+            return semantic
 
         matches = sum(1 for kw in keywords if kw in text_fields and len(kw) > 2)
         if not matches:

@@ -138,15 +138,16 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             },
         )
 
-        from apps.notifications.services import NotificationService
         await database_sync_to_async(self._notify_participants)(message)
 
     def _notify_participants(self, message):
+        from apps.notifications.services import NotificationService
+
         conversation = Conversation.objects.get(id=self.conversation_id)
-        for participant in conversation.participants.all():
-            if participant.id != self.user.id:
+        for participant in conversation.participants.select_related("user"):
+            if participant.user_id != self.user.id:
                 NotificationService.notify(
-                    recipient=participant,
+                    recipient=participant.user,
                     notification_type="message_received",
                     title="New Message",
                     message=f"{self.user.email}: {message.content[:120]}",

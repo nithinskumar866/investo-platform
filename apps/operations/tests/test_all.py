@@ -222,24 +222,24 @@ class TestOperationsService:
 
 class TestOperationsViews:
     def test_dashboard(self, admin_client):
-        resp = admin_client.get("/api/v1/ops/dashboard/")
+        resp = admin_client.get("/api/v1/admin/dashboard/")
         assert resp.status_code == 200
 
     def test_dashboard_forbidden(self, authenticated_client):
-        resp = authenticated_client.get("/api/v1/ops/dashboard/")
+        resp = authenticated_client.get("/api/v1/admin/dashboard/")
         assert resp.status_code == 403
 
     def test_user_list(self, admin_client, user):
-        resp = admin_client.get("/api/v1/ops/users/")
+        resp = admin_client.get("/api/v1/admin/users/")
         assert resp.status_code == 200
 
     def test_user_detail(self, admin_client, user):
-        resp = admin_client.get(f"/api/v1/ops/users/{user.id}/")
+        resp = admin_client.get(f"/api/v1/admin/users/{user.id}/")
         assert resp.status_code == 200
 
     def test_user_suspend(self, admin_client, user):
         resp = admin_client.post(
-            f"/api/v1/ops/users/{user.id}/suspend/",
+            f"/api/v1/admin/users/{user.id}/suspend/",
             {"reason": "Test"},
             format="json",
         )
@@ -249,19 +249,19 @@ class TestOperationsViews:
         user.is_active = False
         user.save()
         resp = admin_client.post(
-            f"/api/v1/ops/users/{user.id}/restore/",
+            f"/api/v1/admin/users/{user.id}/restore/",
             {"reason": "Restored"},
             format="json",
         )
         assert resp.status_code == 200
 
     def test_startup_list(self, admin_client, startup):
-        resp = admin_client.get("/api/v1/ops/startups/")
+        resp = admin_client.get("/api/v1/admin/startups/")
         assert resp.status_code == 200
 
     def test_startup_moderate(self, admin_client, startup):
         resp = admin_client.post(
-            f"/api/v1/ops/startups/{startup.id}/moderate/",
+            f"/api/v1/admin/startups/{startup.id}/moderate/",
             {"action": "approve"},
             format="json",
         )
@@ -269,56 +269,56 @@ class TestOperationsViews:
 
     def test_startup_verify(self, admin_client, startup):
         resp = admin_client.post(
-            f"/api/v1/ops/startups/{startup.id}/verify/",
+            f"/api/v1/admin/startups/{startup.id}/verify/",
             {"verified": True},
             format="json",
         )
         assert resp.status_code == 200
 
     def test_ticket_list(self, admin_client, ticket):
-        resp = admin_client.get("/api/v1/ops/tickets/")
+        resp = admin_client.get("/api/v1/admin/tickets/")
         assert resp.status_code == 200
 
     def test_ticket_list_non_admin(self, authenticated_client, ticket):
-        resp = authenticated_client.get("/api/v1/ops/tickets/")
+        resp = authenticated_client.get("/api/v1/admin/tickets/")
         assert resp.status_code == 200
 
     def test_ticket_create(self, admin_client):
         resp = admin_client.post(
-            "/api/v1/ops/tickets/create/",
+            "/api/v1/admin/tickets/create/",
             {"subject": "Issue", "description": "Desc", "category": "technical"},
             format="json",
         )
         assert resp.status_code == 201
 
     def test_ticket_detail(self, admin_client, ticket):
-        resp = admin_client.get(f"/api/v1/ops/tickets/{ticket.id}/")
+        resp = admin_client.get(f"/api/v1/admin/tickets/{ticket.id}/")
         assert resp.status_code == 200
 
     def test_ticket_update(self, admin_client, ticket):
         resp = admin_client.patch(
-            f"/api/v1/ops/tickets/{ticket.id}/update/",
+            f"/api/v1/admin/tickets/{ticket.id}/update/",
             {"status": "resolved"},
             format="json",
         )
         assert resp.status_code == 200
 
     def test_audit_log_list(self, admin_client, audit_log):
-        resp = admin_client.get("/api/v1/ops/audit/")
+        resp = admin_client.get("/api/v1/admin/audit/")
         assert resp.status_code == 200
 
     def test_audit_log_detail(self, admin_client, audit_log):
-        resp = admin_client.get(f"/api/v1/ops/audit/{audit_log.id}/")
+        resp = admin_client.get(f"/api/v1/admin/audit/{audit_log.id}/")
         assert resp.status_code == 200
 
     def test_revenue(self, admin_client):
-        resp = admin_client.get("/api/v1/ops/revenue/")
+        resp = admin_client.get("/api/v1/admin/revenue/")
         assert resp.status_code == 200
 
     def test_risk(self, admin_client):
-        resp = admin_client.get("/api/v1/ops/risk/")
+        resp = admin_client.get("/api/v1/admin/risk/")
         assert resp.status_code == 200
 
     def test_document_list(self, admin_client):
-        resp = admin_client.get("/api/v1/ops/documents/")
+        resp = admin_client.get("/api/v1/admin/documents/")
         assert resp.status_code == 200

@@ -91,3 +91,6 @@ frontend/tsconfig.tsbuildinfo
 
 # Local scratch pages
 frontend/test-page.html
+# Playwright output
+frontend/test-results/
+frontend/playwright-report/

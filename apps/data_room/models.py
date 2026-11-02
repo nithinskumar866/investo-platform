@@ -43,6 +43,38 @@ class DataRoom(models.Model):
         return f"{self.title} ({self.startup.name})"
 
 
+class DataRoomAccessRequest(models.Model):
+    """An investor asks to see a room; nothing is visible until the founder approves."""
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        APPROVED = "approved", "Approved"
+        DENIED = "denied", "Denied"
+
+    data_room = models.ForeignKey(
+        DataRoom, on_delete=models.CASCADE, related_name="access_requests",
+    )
+    investor = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="data_room_requests",
+    )
+    status = models.CharField(
+        max_length=10, choices=Status.choices, default=Status.PENDING, db_index=True,
+    )
+    message = models.TextField(blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+    decided_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "data_room_access_request"
+        constraints = [
+            models.UniqueConstraint(fields=["data_room", "investor"], name="unique_room_access_request"),
+        ]
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.investor.email} → {self.data_room.title} [{self.status}]"
+
+
 class DataRoomDocument(models.Model):
     class DocumentType(models.TextChoices):
         PITCH_DECK = "pitch_deck", "Pitch Deck"

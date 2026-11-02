@@ -11,10 +11,10 @@ class MeetingRepository:
 
     @staticmethod
     @transaction.atomic
-    def create_meeting(data, organizer, investor, meeting_link=""):
+    def create_meeting(data, organizer, investor, meeting_link="", invitee=None):
         meeting = Meeting.objects.create(
             organizer=organizer,
-            startup=data.get("startup"),
+            startup_id=getattr(data.get("startup"), "id", data.get("startup")),
             investor=investor,
             title=data["title"],
             description=data.get("description", ""),
@@ -31,7 +31,7 @@ class MeetingRepository:
             meeting=meeting, user=organizer, attendance_status="accepted",
         )
         MeetingParticipant.objects.create(
-            meeting=meeting, user=investor,
+            meeting=meeting, user=invitee or investor,
         )
 
         return meeting

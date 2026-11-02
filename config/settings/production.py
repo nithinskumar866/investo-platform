@@ -3,6 +3,8 @@ from .base import *
 DEBUG = False
 
 # Security
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+SECURE_REDIRECT_EXEMPT = [r"^health/"]
 SECURE_SSL_REDIRECT = config("SECURE_SSL_REDIRECT", default=True, cast=bool)
 SECURE_HSTS_SECONDS = config("SECURE_HSTS_SECONDS", default=31536000, cast=int)
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
@@ -16,10 +18,6 @@ X_FRAME_OPTIONS = "DENY"
 # Per-IP rate limiting for auth endpoints
 SIMPLE_JWT["AUTH_TOKEN_CLASSES"] = ("rest_framework_simplejwt.tokens.AccessToken",)
 
-# Production middleware additions
-MIDDLEWARE += [
-    "django.middleware.security.SecurityMiddleware",
-]
 
 # WhiteNoise for static files
 MIDDLEWARE.insert(1, "whitenoise.middleware.WhiteNoiseMiddleware")

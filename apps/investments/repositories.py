@@ -196,3 +196,22 @@ class InvestmentRepository:
             .annotate(count=Count("id"))
             .values_list("status", "count"),
         )
+
+    @staticmethod
+    def funding_progress(startup):
+        S = InvestmentOpportunity.Status
+        deals = InvestmentOpportunity.objects.filter(startup=startup)
+
+        def total(status):
+            return deals.filter(status=status).aggregate(total=Sum("amount_offered"))["total"] or 0
+
+        raised = total(S.INVESTED)
+        goal = startup.funding_goal or 0
+        return {
+            "goal": str(goal),
+            "raised": str(raised),
+            "committed": str(total(S.TERM_SHEET_SENT)),
+            "currency": startup.currency,
+            "investor_count": deals.filter(status=S.INVESTED).count(),
+            "percent_raised": round(float(raised) / float(goal) * 100, 1) if goal else 0,
+        }

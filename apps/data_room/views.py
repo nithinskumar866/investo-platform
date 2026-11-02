@@ -7,6 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
+from apps.common.exceptions import ApplicationError
 from apps.common.permissions import IsEntrepreneur, IsInvestor
 
 from .models import DataRoom, DocumentAccess
@@ -25,13 +26,22 @@ from .serializers import (
 from .services import DataRoomService
 
 
+def _founder_startup(request):
+    startup_id = request.query_params.get("startup_id") or request.data.get("startup_id")
+    startups = request.user.startups.all()
+    startup = startups.filter(id=startup_id).first() if startup_id else startups.first()
+    if not startup:
+        raise ApplicationError("Create a startup first", "NO_STARTUP", 404)
+    return startup
+
+
 class DataRoomViewSet(ViewSet):
     """Startup-side data room management."""
 
     permission_classes = [IsAuthenticated, IsEntrepreneur]
 
     def list(self, request):
-        startup = request.user.startup_profile
+        startup = _founder_startup(request)
         rooms = DataRoomService.list_rooms(startup, request.user)
         serializer = DataRoomListSerializer(rooms, many=True)
         return Response(serializer.data)
@@ -39,7 +49,7 @@ class DataRoomViewSet(ViewSet):
     def create(self, request):
         serializer = DataRoomCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        startup = request.user.startup_profile
+        startup = _founder_startup(request)
         room = DataRoomService.create_room(startup, request.user, serializer.validated_data)
         result = DataRoomDetailSerializer(room)
         return Response(result.data, status=status.HTTP_201_CREATED)
@@ -78,13 +88,13 @@ class DataRoomViewSet(ViewSet):
 
     @action(detail=False, methods=["get"])
     def analytics(self, request):
-        startup = request.user.startup_profile
+        startup = _founder_startup(request)
         analytics = DataRoomService.get_startup_analytics(startup, request.user)
         return Response(analytics)
 
     @action(detail=False, methods=["get"])
     def full_analytics(self, request):
-        startup = request.user.startup_profile
+        startup = _founder_startup(request)
         analytics = DataRoomService.get_data_room_analytics(startup, request.user)
         return Response(analytics)
 
@@ -97,7 +107,7 @@ class DataRoomDocumentViewSet(ViewSet):
     def list(self, request):
         room_id = request.query_params.get("room_id")
         if not room_id:
-            startup = request.user.startup_profile
+            startup = _founder_startup(request)
             docs = DataRoomRepository.get_room_documents(
                 DataRoom.objects.filter(startup=startup).first(),
             )
@@ -194,12 +204,12 @@ class InvestorDocumentViewSet(ViewSet):
 
     def list(self, request):
         docs = DataRoomService.list_shared_documents(request.user)
-        serializer = DataRoomDocumentDetailSerializer(docs, many=True)
+        serializer = DataRoomDocumentDetailSerializer(docs, many=True, context={"hide_access_list": True})
         return Response(serializer.data)
 
     def retrieve(self, request, pk=None):
         doc = DataRoomService.get_document_for_investor(pk, request.user)
-        serializer = DataRoomDocumentDetailSerializer(doc)
+        serializer = DataRoomDocumentDetailSerializer(doc, context={"hide_access_list": True})
         return Response(serializer.data)
 
     @action(detail=True, methods=["post"])
@@ -216,3 +226,69 @@ class InvestorDocumentViewSet(ViewSet):
     def analytics(self, request):
         analytics = DataRoomService.get_investor_analytics(request.user)
         return Response(analytics)
+
+
+def _serialize_request(access_request):
+    investor = access_request.investor
+    return {
+        "id": access_request.id,
+        "data_room_id": access_request.data_room_id,
+        "data_room_title": access_request.data_room.title,
+        "startup_name": access_request.data_room.startup.name,
+        "investor_id": investor.id,
+        "investor_name": investor.get_full_name() or investor.email,
+        "status": access_request.status,
+        "message": access_request.message,
+        "created_at": access_request.created_at,
+        "decided_at": access_request.decided_at,
+    }
+
+
+class InvestorRoomViewSet(ViewSet):
+    """Rooms an investor can see exist, and request access to."""
+
+    permission_classes = [IsAuthenticated, IsInvestor]
+
+    def list(self, request):
+        rooms = DataRoomRepository.rooms_for_investor(request.query_params.get("startup_id"))
+        statuses = DataRoomRepository.request_statuses(request.user)
+        return Response([
+            {
+                "id": room.id,
+                "title": room.title,
+                "description": room.description,
+                "startup_id": room.startup_id,
+                "startup_name": room.startup.name,
+                "access_status": statuses.get(room.id, "none"),
+            }
+            for room in rooms
+        ])
+
+    @action(detail=True, methods=["post"])
+    def request_access(self, request, pk=None):
+        access_request = DataRoomService.request_room_access(
+            pk, request.user, request.data.get("message", ""),
+        )
+        return Response(_serialize_request(access_request), status=status.HTTP_201_CREATED)
+
+
+class AccessRequestViewSet(ViewSet):
+    """Founder side: approve or deny investors asking to see a room."""
+
+    permission_classes = [IsAuthenticated, IsEntrepreneur]
+
+    def list(self, request):
+        requests = DataRoomRepository.requests_for_founder(request.user)
+        return Response([_serialize_request(r) for r in requests])
+
+    @action(detail=True, methods=["post"])
+    def approve(self, request, pk=None):
+        return Response(_serialize_request(
+            DataRoomService.decide_access_request(pk, request.user, approved=True),
+        ))
+
+    @action(detail=True, methods=["post"])
+    def deny(self, request, pk=None):
+        return Response(_serialize_request(
+            DataRoomService.decide_access_request(pk, request.user, approved=False),
+        ))

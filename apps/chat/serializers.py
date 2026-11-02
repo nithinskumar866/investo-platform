@@ -13,13 +13,13 @@ class ParticipantSerializer(serializers.Serializer):
 
     def get_avatar(self, obj):
         try:
-            return obj.user.avatar.url if obj.user.avatar else None
+            return obj.avatar.url if obj.avatar else None
         except Exception:
             return None
 
 
 class MessageSerializer(serializers.ModelSerializer):
-    sender = ParticipantSerializer(source="sender.participant_set.first", read_only=True)
+    sender = ParticipantSerializer(read_only=True)
     read_by = serializers.SerializerMethodField()
 
     class Meta:

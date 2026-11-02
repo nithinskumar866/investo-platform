@@ -3,6 +3,8 @@ import mimetypes
 
 from django.db import transaction
 
+from django.utils import timezone
+
 from apps.common.exceptions import ApplicationError
 
 from .models import DataRoom, DataRoomDocument
@@ -119,22 +121,6 @@ class DataRoomService:
         DataRoomService._validate_file(file_obj)
 
         doc = DataRoomRepository.create_document(room, user, data, file_obj)
-
-        # Auto-grant access to matched investors based on room visibility
-        if room.visibility == DataRoom.Visibility.MATCHED_INVESTORS:
-            from apps.matching.models import MatchScore
-            matched_investors = MatchScore.objects.filter(
-                startup=room.startup,
-                status__in=["recommended", "saved", "contacted"],
-            ).values_list("investor", flat=True).distinct()
-
-            for investor_id in matched_investors:
-                from django.contrib.auth import get_user_model
-                try:
-                    investor = get_user_model().objects.get(id=investor_id)
-                    DataRoomRepository.grant_access(doc, investor, user)
-                except Exception:
-                    continue
 
         from apps.notifications.services import NotificationService
         NotificationService.notify(
@@ -258,6 +244,45 @@ class DataRoomService:
         return True
 
     # ── Investor document access ──────────────────────────────────
+
+    @staticmethod
+    def request_room_access(room_id, investor, message=""):
+        room = DataRoom.objects.select_related("startup", "startup__owner").filter(id=room_id).first()
+        if not room or room.visibility == DataRoom.Visibility.PRIVATE:
+            raise ApplicationError("Data room not found", "NOT_FOUND", 404)
+        access_request = DataRoomRepository.request_access(room, investor, message)
+
+        from apps.notifications.services import NotificationService
+        NotificationService.notify(
+            recipient=room.startup.owner,
+            notification_type="system",
+            title="Data Room Access Request",
+            message=f"{investor.get_full_name() or investor.email} asked to view {room.title}",
+            actor=investor,
+            data={"data_room_id": room.id, "request_id": access_request.id},
+        )
+        return access_request
+
+    @staticmethod
+    def decide_access_request(request_id, user, approved):
+        access_request = DataRoomRepository.get_request(request_id)
+        if not access_request:
+            raise ApplicationError("Request not found", "NOT_FOUND", 404)
+        DataRoomService._validate_startup_owner(access_request.data_room.startup, user)
+        access_request.status = "approved" if approved else "denied"
+        access_request.decided_at = timezone.now()
+        access_request.save(update_fields=["status", "decided_at"])
+
+        from apps.notifications.services import NotificationService
+        NotificationService.notify(
+            recipient=access_request.investor,
+            notification_type="system",
+            title=f"Data Room Access {'Approved' if approved else 'Denied'}",
+            message=f"Your request to view {access_request.data_room.title} was {access_request.status}",
+            actor=user,
+            data={"data_room_id": access_request.data_room_id, "startup_id": access_request.data_room.startup_id},
+        )
+        return access_request
 
     @staticmethod
     def list_shared_documents(investor):

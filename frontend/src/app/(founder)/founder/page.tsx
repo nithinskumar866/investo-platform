@@ -19,11 +19,13 @@ export default function FounderDashboard() {
   const { data: meetings, isLoading: meetingsLoading } = useMeetings()
   const { data: feed, isLoading: feedLoading } = useFeed()
 
+  const upcoming = meetings?.filter((m) => new Date(m.scheduled_start) > new Date() && m.status !== "cancelled")
+
   const kpiCards = [
     { label: "Startup Views", key: "startup_views", icon: Eye },
     { label: "Matches", key: "matches", icon: Handshake },
-    { label: "Chat Engagement", key: "chat_engagement", icon: CalendarCheck },
-    { label: "Data Room", key: "data_room", icon: DollarSign },
+    { label: "Chat Messages", key: "chat_engagement", icon: CalendarCheck },
+    { label: "Data Room Views", key: "data_room", icon: DollarSign },
   ]
 
   return (
@@ -62,7 +64,7 @@ export default function FounderDashboard() {
         })}
       </div>
 
-      {analytics?.funding_progress && (
+      {!!analytics?.funding_progress?.goal && (
         <Card>
           <CardHeader>
             <CardTitle className="text-sm font-medium">Funding Progress</CardTitle>
@@ -70,7 +72,7 @@ export default function FounderDashboard() {
           <CardContent>
             <div className="flex items-center justify-between text-sm mb-2">
               <span>Raised: {formatCurrency(analytics.funding_progress.raised)}</span>
-              <span>Goal: {formatCurrency(analytics.funding_progress.goal)}</span>
+              <span>Goal: {formatCurrency(analytics.funding_progress.goal ?? 0)}</span>
             </div>
             <div className="h-2 w-full rounded-full bg-primary/20">
               <div
@@ -78,7 +80,7 @@ export default function FounderDashboard() {
                 style={{ width: `${Math.min(analytics.funding_progress.percentage, 100)}%` }}
               />
             </div>
-            <p className="text-xs text-muted-foreground mt-2">{analytics.funding_progress.percentage}% funded</p>
+            <p className="text-xs text-muted-foreground mt-2">{analytics.funding_progress.percentage}% funded (first startup, dummy money)</p>
           </CardContent>
         </Card>
       )}
@@ -94,22 +96,22 @@ export default function FounderDashboard() {
           <CardContent>
             {matchesLoading ? (
               <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full" />)}</div>
-            ) : recentMatches?.slice(0, 5).map((match) => (
+            ) : !recentMatches?.length ? (
+              <p className="text-sm text-muted-foreground">No matches yet.</p>
+            ) : recentMatches.slice(0, 5).map((match) => (
               <div key={match.id} className="flex items-center gap-3 py-2 border-b last:border-0">
-                <Avatar fallback={match.investor_detail?.first_name?.[0] ?? "I"} />
+                <Avatar fallback={match.investor_name?.[0] ?? "I"} />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">
-                    {match.investor_detail
-                      ? `${match.investor_detail.first_name} ${match.investor_detail.last_name}`
-                      : `Investor #${match.investor}`}
+                    {match.investor_name}
                   </p>
-                  <p className="text-xs text-muted-foreground">{match.status}</p>
+                  <p className="text-xs text-muted-foreground truncate">for {match.startup_name}</p>
                 </div>
                 <Badge variant={match.score >= 80 ? "success" : match.score >= 50 ? "warning" : "secondary"}>
-                  {match.score}%
+                  {Math.round(match.score)}%
                 </Badge>
               </div>
-            )) ?? <p className="text-sm text-muted-foreground">No matches yet.</p>}
+            ))}
           </CardContent>
         </Card>
 
@@ -123,7 +125,9 @@ export default function FounderDashboard() {
           <CardContent>
             {meetingsLoading ? (
               <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full" />)}</div>
-            ) : meetings?.filter((m) => new Date(m.scheduled_start) > new Date()).slice(0, 5).map((meeting) => (
+            ) : !upcoming?.length ? (
+              <p className="text-sm text-muted-foreground">No upcoming meetings.</p>
+            ) : upcoming.slice(0, 5).map((meeting) => (
               <div key={meeting.id} className="flex items-center gap-3 py-2 border-b last:border-0">
                 <CalendarCheck className="h-4 w-4 text-muted-foreground shrink-0" />
                 <div className="flex-1 min-w-0">
@@ -135,7 +139,7 @@ export default function FounderDashboard() {
                 </div>
                 <Badge variant={meeting.status === "confirmed" ? "success" : "warning"}>{meeting.status}</Badge>
               </div>
-            )) ?? <p className="text-sm text-muted-foreground">No upcoming meetings.</p>}
+            ))}
           </CardContent>
         </Card>
 
@@ -146,7 +150,9 @@ export default function FounderDashboard() {
           <CardContent>
             {feedLoading ? (
               <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full" />)}</div>
-            ) : feed?.slice(0, 6).map((activity) => (
+            ) : !feed?.length ? (
+              <p className="text-sm text-muted-foreground">No recent activity.</p>
+            ) : feed.slice(0, 6).map((activity) => (
               <div key={activity.id} className="flex items-start gap-3 py-2 border-b last:border-0">
                 <div className="h-2 w-2 mt-2 rounded-full bg-primary shrink-0" />
                 <div className="flex-1 min-w-0">
@@ -154,7 +160,7 @@ export default function FounderDashboard() {
                   <p className="text-xs text-muted-foreground">{formatRelativeTime(activity.created_at)}</p>
                 </div>
               </div>
-            )) ?? <p className="text-sm text-muted-foreground">No recent activity.</p>}
+            ))}
           </CardContent>
         </Card>
       </div>

@@ -3,6 +3,7 @@ import logging
 from django.db import models
 
 from rest_framework import viewsets, status
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.decorators import action, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
@@ -50,13 +51,13 @@ class StartupViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action == "create":
             return [IsAuthenticated(), CanCreateStartup()]
-        if self.action in ("update", "partial_update", "destroy", "publish", "archive", "upload_document", "delete_document"):
+        if self.action in ("update", "partial_update", "destroy", "publish", "archive", "upload_document", "delete_document", "documents", "recommended_investors"):
             return [IsAuthenticated(), CanManageStartup()]
-        if self.action in ("my_startups", "bookmark", "documents"):
+        if self.action in ("my_startups", "bookmark", "funding_progress"):
             return [IsAuthenticated()]
         if self.action in ("verify", "statistics", "admin_list"):
             return [IsAuthenticated(), IsAdmin()]
-        if self.action in ("submit", "recommended_investors"):
+        if self.action == "submit":
             return [IsAuthenticated()]
         return [AllowAny()]
 
@@ -68,7 +69,7 @@ class StartupViewSet(viewsets.ModelViewSet):
 
         if self.action == "list":
             queryset = queryset.select_related("owner").only(
-                "id", "name", "tagline", "industry", "stage",
+                "id", "name", "slug", "tagline", "industry", "stage",
                 "funding_goal", "equity_offered", "location",
                 "logo", "team_size", "is_verified", "status",
                 "view_count", "bookmark_count", "created_at",
@@ -90,6 +91,14 @@ class StartupViewSet(viewsets.ModelViewSet):
         StartupService.increment_view_count(instance)
         serializer = self.get_serializer(instance)
         return Response({"status": "success", "data": serializer.data})
+
+    @extend_schema(tags=["Startups"], summary="Dummy funding raised so far against the goal")
+    @action(detail=True, methods=["get"])
+    def funding_progress(self, request, pk=None):
+        from apps.investments.repositories import InvestmentRepository
+
+        startup = self.get_object()
+        return Response({"status": "success", "data": InvestmentRepository.funding_progress(startup)})
 
     @extend_schema(tags=["Startups"], summary="Get startup statistics (admin)")
     @action(detail=False, methods=["get"])
@@ -177,7 +186,7 @@ class StartupViewSet(viewsets.ModelViewSet):
             return Response({"status": "success", "data": {"bookmarked": False, "bookmark_count": startup.bookmark_count}})
 
     @extend_schema(tags=["Startups"], summary="Upload a document for this startup")
-    @action(detail=True, methods=["post"], parser_classes=[])
+    @action(detail=True, methods=["post"], parser_classes=[MultiPartParser, FormParser])
     @permission_classes([IsAuthenticated, CanManageStartup])
     def upload_document(self, request, pk=None):
         from .models import StartupDocument

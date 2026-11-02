@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
 
 
@@ -49,6 +50,7 @@ class InvestmentOpportunity(models.Model):
     )
     notes = models.TextField(blank=True, default="")
     term_sheet_url = models.URLField(blank=True, default="")
+    founder_accepted_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -81,7 +83,7 @@ class InvestmentActivity(models.Model):
         related_name="investment_activities",
     )
     action = models.CharField(max_length=50, db_index=True)
-    metadata = models.JSONField(default=dict, blank=True)
+    metadata = models.JSONField(default=dict, blank=True, encoder=DjangoJSONEncoder)
     timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:

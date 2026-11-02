@@ -224,7 +224,7 @@ class BillingService:
 
     @staticmethod
     def get_usage(user):
-        sub = SubscriptionRepository.get_user_subscription(user)
+        sub = BillingService.get_subscription(user)
         if not sub or not sub.plan:
             return {}
 

@@ -10,6 +10,7 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useRegister } from "@/hooks/use-api"
+import { useAuthStore } from "@/stores/auth"
 import { Mail, Lock, User, Users, Loader2, Briefcase, UserCheck } from "lucide-react"
 
 const registerSchema = z.object({
@@ -29,6 +30,7 @@ type RegisterForm = z.infer<typeof registerSchema>
 export default function RegisterPage() {
   const router = useRouter()
   const registerMutation = useRegister()
+  const signIn = useAuthStore((s) => s.signIn)
   const [selectedRole, setSelectedRole] = useState<"entrepreneur" | "investor">("entrepreneur")
 
   const {
@@ -44,12 +46,11 @@ export default function RegisterPage() {
   const onSubmit = (data: RegisterForm) => {
     const { confirm_password, ...payload } = data
     registerMutation.mutate({ ...payload, confirm_password }, {
-      onSuccess: () => {
-        toast.success("Account created! Please sign in.")
-        router.push("/auth/login")
-      },
-      onError: (err: Error) => {
-        toast.error(err.message)
+      onSuccess: (res) => {
+        // The API signs new accounts in straight away; email verification is the next, optional step.
+        signIn(res.user, res.tokens)
+        toast.success("Account created. Check your email for a verification code.")
+        router.push(`/auth/otp?email=${encodeURIComponent(res.user.email)}`)
       },
     })
   }

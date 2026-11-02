@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { Suspense } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -24,36 +24,34 @@ const resetSchema = z.object({
 
 type ResetForm = z.infer<typeof resetSchema>
 
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
   const router = useRouter()
+  const emailParam = useSearchParams().get("email") ?? ""
   const resetPassword = useResetPassword()
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<ResetForm>({ resolver: zodResolver(resetSchema) })
+  } = useForm<ResetForm>({ resolver: zodResolver(resetSchema), defaultValues: { email: emailParam } })
 
-  const onSubmit = async (data: ResetForm) => {
-    try {
-      await resetPassword.mutateAsync({
-        email: data.email,
-        otp: data.otp,
-        password: data.password,
-      })
-      toast.success("Password reset successfully. You can now sign in.")
-      router.push("/auth/login")
-    } catch (err: any) {
-      const msg = err.response?.data?.error?.message || err.message || "Invalid or expired reset code"
-      toast.error(msg)
-    }
+  const onSubmit = (data: ResetForm) => {
+    resetPassword.mutate(
+      { email: data.email, otp: data.otp, password: data.password, confirm_password: data.confirmPassword },
+      {
+        onSuccess: () => {
+          toast.success("Password reset successfully. You can now sign in.")
+          router.push("/auth/login")
+        },
+      },
+    )
   }
 
   return (
     <div className="rounded-2xl border border-white/5 bg-white/[0.03] p-8 shadow-2xl shadow-black/40 backdrop-blur-xl">
       <div className="mb-8 text-center">
         <h1 className="text-2xl font-semibold tracking-tight text-white">Reset password</h1>
-        <p className="mt-2 text-sm text-white/50">Enter your reset code and new password</p>
+        <p className="mt-2 text-sm text-white/50">Enter the 6-digit code from your email and a new password</p>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
@@ -112,5 +110,13 @@ export default function ResetPasswordPage() {
         </Link>
       </div>
     </div>
+  )
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={null}>
+      <ResetPasswordForm />
+    </Suspense>
   )
 }

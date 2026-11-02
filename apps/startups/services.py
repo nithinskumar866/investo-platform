@@ -87,6 +87,8 @@ class StartupService:
             "is_visible": True,
         })
         logger.info(f"Startup published: {startup.name}")
+        from apps.matching.services import MatchingService
+        MatchingService.generate_matches_for_startup(startup)
         from apps.activity_feed.services import ActivityFeedService
         ActivityFeedService.publish_activity(
             actor=startup.owner,
@@ -101,10 +103,10 @@ class StartupService:
     @staticmethod
     @transaction.atomic
     def archive_startup(startup):
-        if startup.status == "archived":
+        if startup.status == Startup.Status.CLOSED:
             raise ValueError("Startup is already archived")
         StartupRepository.update_fields(startup, {
-            "status": "archived",
+            "status": Startup.Status.CLOSED,
             "is_visible": False,
         })
         logger.info(f"Startup archived: {startup.name}")

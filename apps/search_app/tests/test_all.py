@@ -1,6 +1,8 @@
 import pytest
 from unittest.mock import Mock, patch, PropertyMock
 
+from conftest import backdate
+
 from apps.accounts.models import User
 from apps.search_app.models import SavedSearch, SearchHistory, SearchClickEvent
 from apps.search_app.services import SearchService
@@ -94,6 +96,7 @@ class TestSearchHistoryModel:
         h2 = SearchHistory.objects.create(
             user=user, query="second", search_type="startups", results_count=2,
         )
+        backdate(h1)
         qs = SearchHistory.objects.all()
         assert qs.first() == h2
 
@@ -337,17 +340,16 @@ class TestSearchViewSet:
             resp = authenticated_client.get("/api/v1/search/recommended/")
         assert resp.status_code == 200
 
-    def test_save(self, authenticated_client):
-        with patch(
-            "apps.search_app.services.SearchRepository.save_search",
-            return_value=Mock(id=1, name="Saved", search_type="startups", filters={}),
-        ):
-            resp = authenticated_client.post(
-                "/api/v1/search/save/",
-                {"name": "My Search", "search_type": "startups", "filters": {"industry": "ai_ml"}},
-                format="json",
-            )
+    def test_save(self, authenticated_client, user):
+        resp = authenticated_client.post(
+            "/api/v1/search/save/",
+            {"name": "My Search", "search_type": "startups", "filters": {"industry": "ai_ml"}},
+            format="json",
+        )
         assert resp.status_code == 201
+        assert resp.json()["name"] == "My Search"
+        saved = SavedSearch.objects.get(user=user)
+        assert saved.filters == {"industry": "ai_ml"}
 
     def test_saved_list(self, authenticated_client, saved_search):
         resp = authenticated_client.get("/api/v1/search/saved/")
@@ -367,13 +369,16 @@ class TestSearchViewSet:
         resp = authenticated_client.get("/api/v1/search/history/")
         assert resp.status_code == 200
 
-    def test_analytics(self, authenticated_client):
-        with patch(
-            "apps.search_app.services.SearchRepository.get_analytics",
-            return_value={"total_searches": 100, "total_clicks": 50, "ctr": 0.5},
-        ):
-            resp = authenticated_client.get("/api/v1/search/analytics/")
+    def test_analytics(self, admin_client, search_history):
+        resp = admin_client.get("/api/v1/search/analytics/")
         assert resp.status_code == 200
+        data = resp.json()
+        assert data["total_searches"] == 1
+        assert data["top_queries"][0]["query"] == "machine learning"
+
+    def test_analytics_is_admin_only(self, authenticated_client):
+        resp = authenticated_client.get("/api/v1/search/analytics/")
+        assert resp.status_code == 403
 
     def test_search_requires_auth(self, api_client):
         resp = api_client.get("/api/v1/search/startups/?q=ai")

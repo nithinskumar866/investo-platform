@@ -1,3 +1,4 @@
+from datetime import timedelta
 from django.contrib.auth import get_user_model
 from django.db.models import (
     Avg, Count, Max, Min, Q, Sum,
@@ -29,7 +30,7 @@ class AnalyticsRepository:
         if start_date:
             kwargs[f"{field}__gte"] = start_date
         if end_date:
-            kwargs[f"{field}__lte"] = end_date
+            kwargs[f"{field}__lt"] = end_date + timedelta(days=1)
         return kwargs
 
     # ═══════════════════════════════════════════════════════════════

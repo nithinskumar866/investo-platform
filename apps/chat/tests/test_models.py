@@ -1,6 +1,8 @@
 import pytest
 from django.db import IntegrityError
 
+from conftest import backdate
+
 from apps.accounts.models import User
 from apps.chat.models import Conversation, ConversationParticipant, Message, MessageReadStatus
 from apps.common.tests.factories import UserFactory, FounderFactory, InvestorFactory
@@ -45,6 +47,7 @@ class TestConversation:
     def test_conversation_ordering_by_updated_at(self, user):
         c1 = Conversation.objects.create(created_by=user)
         c2 = Conversation.objects.create(created_by=user)
+        backdate(c1, "updated_at")
         assert list(Conversation.objects.all()) == [c2, c1]
 
     def test_conversation_updated_at_changes_on_message(self, user):
@@ -124,6 +127,7 @@ class TestMessage:
         conversation = Conversation.objects.create(created_by=user)
         m1 = Message.objects.create(conversation=conversation, sender=user, content="first")
         m2 = Message.objects.create(conversation=conversation, sender=user, content="second")
+        backdate(m1)
         messages = Message.objects.filter(conversation=conversation).order_by("-created_at")
         assert list(messages) == [m2, m1]
 

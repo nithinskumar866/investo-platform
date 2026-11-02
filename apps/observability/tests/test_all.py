@@ -1,4 +1,5 @@
 import pytest
+from django.http import HttpResponse
 import json
 import time
 from django.utils import timezone
@@ -156,11 +157,12 @@ class TestRequestIDMiddleware:
 
     def test_response_has_x_request_id(self, rf):
         request = rf.get("/api/test/")
-        response = Mock()
+        response = HttpResponse()
         middleware = RequestIDMiddleware(lambda r: response)
         middleware.process_request(request)
         result = middleware.process_response(request, response)
-        assert hasattr(result, "__setitem__") or response["X-Request-ID"]
+        assert result["X-Request-ID"] == request.request_id
+        assert result["X-Correlation-ID"] == request.correlation_id
 
     def test_uses_existing_header(self, rf):
         request = rf.get("/api/test/", HTTP_X_REQUEST_ID="existing-id")
@@ -265,52 +267,52 @@ class TestObservabilityService:
 
 class TestObservabilityViews:
     def test_health_all(self, api_client):
-        resp = api_client.get("/api/v1/health/")
+        resp = api_client.get("/health/")
         assert resp.status_code in (200, 503)
         data = resp.json()
         assert "overall" in data
         assert "services" in data
 
     def test_health_db(self, api_client):
-        resp = api_client.get("/api/v1/health/db/")
+        resp = api_client.get("/health/db/")
         assert resp.status_code in (200, 503)
 
     def test_health_redis(self, api_client):
-        resp = api_client.get("/api/v1/health/redis/")
+        resp = api_client.get("/health/redis/")
         assert resp.status_code in (200, 503)
 
     def test_health_storage(self, api_client):
-        resp = api_client.get("/api/v1/health/storage/")
+        resp = api_client.get("/health/storage/")
         assert resp.status_code in (200, 503)
 
     def test_health_celery(self, api_client):
-        resp = api_client.get("/api/v1/health/celery/")
+        resp = api_client.get("/health/celery/")
         assert resp.status_code in (200, 503)
 
     def test_ops_health(self, admin_client):
-        resp = admin_client.get("/api/v1/admin/ops/health/")
+        resp = admin_client.get("/api/v1/ops/health/")
         assert resp.status_code == 200
 
     def test_ops_metrics(self, admin_client):
-        resp = admin_client.get("/api/v1/admin/ops/metrics/")
+        resp = admin_client.get("/api/v1/ops/metrics/")
         assert resp.status_code == 200
 
     def test_ops_errors(self, admin_client, system_error):
-        resp = admin_client.get("/api/v1/admin/ops/errors/")
+        resp = admin_client.get("/api/v1/ops/errors/")
         assert resp.status_code == 200
 
     def test_ops_jobs(self, admin_client):
-        resp = admin_client.get("/api/v1/admin/ops/jobs/")
+        resp = admin_client.get("/api/v1/ops/jobs/")
         assert resp.status_code == 200
 
     def test_ops_alerts(self, admin_client, alert_event):
-        resp = admin_client.get("/api/v1/admin/ops/alerts/")
+        resp = admin_client.get("/api/v1/ops/alerts/")
         assert resp.status_code == 200
 
     def test_ops_endpoints_forbidden(self, authenticated_client):
-        resp = authenticated_client.get("/api/v1/admin/ops/health/")
+        resp = authenticated_client.get("/api/v1/ops/health/")
         assert resp.status_code == 403
 
     def test_ops_errors_forbidden(self, authenticated_client):
-        resp = authenticated_client.get("/api/v1/admin/ops/errors/")
+        resp = authenticated_client.get("/api/v1/ops/errors/")
         assert resp.status_code == 403

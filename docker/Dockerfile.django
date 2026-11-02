@@ -23,7 +23,7 @@ RUN pip install --no-cache-dir -r requirements/base.txt -r requirements/producti
 
 COPY . .
 
-RUN python manage.py collectstatic --noinput --settings=config.settings.production
+RUN DJANGO_SECRET_KEY=build-only-not-used python manage.py collectstatic --noinput --settings=config.settings.production
 
 EXPOSE 8000 8001
 

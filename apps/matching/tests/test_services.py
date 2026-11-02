@@ -173,3 +173,32 @@ class TestMatchingServiceGetSaved:
 
         mock_repo.get_dismissed_matches.assert_called_once_with(investor)
         assert result == []
+
+
+class TestRegenerationKeepsStatus:
+    """Re-scoring must not put saved or dismissed matches back to recommended."""
+
+    @pytest.mark.parametrize("kept", [MatchScore.Status.SAVED, MatchScore.Status.DISMISSED])
+    def test_generate_for_startup_keeps_status(self, investor, investor_preference, startup, kept):
+        match = MatchScore.objects.create(
+            investor=investor, startup=startup, score=Decimal("1.00"), status=kept,
+        )
+        MatchingService.generate_matches_for_startup(startup)
+        match.refresh_from_db()
+        assert match.status == kept
+        assert match.score != Decimal("1.00")
+
+    def test_generate_for_investor_keeps_saved_status(self, investor, investor_preference, startup):
+        match = MatchScore.objects.create(
+            investor=investor, startup=startup, score=Decimal("1.00"),
+            status=MatchScore.Status.SAVED,
+        )
+        MatchingService.generate_matches_for_investor(investor)
+        match.refresh_from_db()
+        assert match.status == MatchScore.Status.SAVED
+        assert match.score != Decimal("1.00")
+
+    def test_new_match_starts_recommended(self, investor, investor_preference, startup):
+        MatchingService.generate_matches_for_startup(startup)
+        match = MatchScore.objects.get(investor=investor, startup=startup)
+        assert match.status == MatchScore.Status.RECOMMENDED

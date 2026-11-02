@@ -25,6 +25,7 @@ REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"] = {
     "login_attempt": "1000/hour",
     "otp_request": "1000/hour",
     "resend_verification": "100/hour",
+    "auth_ip": "1000/minute",
 }
 
 # Allow browsable API in development only
@@ -33,20 +34,7 @@ REST_FRAMEWORK["DEFAULT_RENDERER_CLASSES"] = (
     "rest_framework.renderers.BrowsableAPIRenderer",
 )
 
-# Override database for local development convenience
-import os
-if not os.environ.get("DATABASE_URL"):
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": "investo",
-            "USER": "investo",
-            "PASSWORD": "investo",
-            "HOST": "localhost",
-            "PORT": "5432",
-            "CONN_MAX_AGE": 0,
-        }
-    }
+DATABASES["default"]["CONN_MAX_AGE"] = 0
 
 # Cache: shorter TTLs in development
 CACHES["default"]["TIMEOUT"] = 60

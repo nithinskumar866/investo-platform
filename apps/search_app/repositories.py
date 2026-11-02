@@ -5,6 +5,13 @@ from django.utils import timezone
 from .models import SavedSearch, SearchHistory, SearchClickEvent
 
 
+OPPORTUNITY_SORTS = {"created_at", "updated_at", "amount_requested", "status", "relevance"}
+
+
+def _as_list(value):
+    return value if isinstance(value, list) else [value]
+
+
 class SearchRepository:
     """Data access layer for search operations."""
 
@@ -13,7 +20,9 @@ class SearchRepository:
     @staticmethod
     def search_startups(query="", filters=None, sort="-relevance", limit=20):
         from apps.startups.models import Startup
-        qs = Startup.objects.filter(is_visible=True).select_related("owner", "metrics")
+        qs = Startup.objects.filter(
+            is_visible=True, status__in=["active", "funded"],
+        ).select_related("owner", "metrics")
 
         if query:
             qs = qs.filter(
@@ -28,11 +37,11 @@ class SearchRepository:
 
         f = filters or {}
         if f.get("industry"):
-            qs = qs.filter(industry__in=f["industry"])
+            qs = qs.filter(industry__in=_as_list(f["industry"]))
         if f.get("stage"):
-            qs = qs.filter(stage__in=f["stage"])
+            qs = qs.filter(stage__in=_as_list(f["stage"]))
         if f.get("status"):
-            qs = qs.filter(status__in=f["status"])
+            qs = qs.filter(status__in=_as_list(f["status"]))
         if f.get("location"):
             qs = qs.filter(location__icontains=f["location"])
         if f.get("funding_goal_min"):
@@ -54,7 +63,7 @@ class SearchRepository:
         if f.get("verified_only"):
             qs = qs.filter(is_verified=True)
         if f.get("business_model"):
-            qs = qs.filter(business_model__in=f["business_model"])
+            qs = qs.filter(business_model__in=_as_list(f["business_model"]))
 
         qs = SearchRepository._annotate_relevance(qs, query)
         qs = SearchRepository._apply_sorting(qs, sort)
@@ -112,7 +121,7 @@ class SearchRepository:
         from django.contrib.auth import get_user_model
         User = get_user_model()
         qs = User.objects.filter(
-            role="investor", is_active=True,
+            role="investor", is_active=True, investor_profile__is_public=True,
         ).select_related("investor_preferences", "investor_profile")
 
         if query:
@@ -127,7 +136,7 @@ class SearchRepository:
 
         f = filters or {}
         if f.get("investor_type"):
-            qs = qs.filter(investor_profile__investor_type__in=f["investor_type"])
+            qs = qs.filter(investor_profile__investor_type__in=_as_list(f["investor_type"]))
         if f.get("ticket_size_min"):
             qs = qs.filter(
                 investor_preferences__max_ticket_size__gte=f["ticket_size_min"],
@@ -226,10 +235,10 @@ class SearchRepository:
 
         f = filters or {}
         if f.get("industry"):
-            qs = qs.filter(entrepreneur_profile__industry__in=f["industry"])
+            qs = qs.filter(entrepreneur_profile__industry__in=_as_list(f["industry"]))
         if f.get("funding_stage"):
             qs = qs.filter(
-                entrepreneur_profile__funding_stage__in=f["funding_stage"],
+                entrepreneur_profile__funding_stage__in=_as_list(f["funding_stage"]),
             )
         if f.get("city"):
             qs = qs.filter(entrepreneur_profile__city__icontains=f["city"])
@@ -274,11 +283,15 @@ class SearchRepository:
     # ── Opportunity Search ────────────────────────────────────────
 
     @staticmethod
-    def search_opportunities(query="", filters=None, sort="-created_at", limit=20):
+    def search_opportunities(query="", filters=None, sort="-created_at", limit=20, user=None):
         from apps.investments.models import InvestmentOpportunity
         qs = InvestmentOpportunity.objects.select_related(
             "startup", "investor",
         )
+        if user is None or not (user.role == "admin" or user.is_staff):
+            qs = qs.filter(Q(investor=user) | Q(startup__owner=user))
+        if sort.lstrip("-") not in OPPORTUNITY_SORTS:
+            sort = "-created_at"
 
         if query:
             qs = qs.filter(
@@ -290,7 +303,7 @@ class SearchRepository:
 
         f = filters or {}
         if f.get("status"):
-            qs = qs.filter(status__in=f["status"])
+            qs = qs.filter(status__in=_as_list(f["status"]))
         if f.get("investor_id"):
             qs = qs.filter(investor_id=f["investor_id"])
         if f.get("startup_id"):
@@ -311,6 +324,7 @@ class SearchRepository:
             from apps.startups.models import Startup
             results = Startup.objects.filter(
                 is_visible=True,
+                status__in=["active", "funded"],
                 name__icontains=query,
             ).values("id", "name", "industry", "stage", "location")[:limit]
             return [
@@ -367,7 +381,7 @@ class SearchRepository:
         from django.contrib.auth import get_user_model
         User = get_user_model()
         return User.objects.filter(
-            role="investor", is_active=True,
+            role="investor", is_active=True, investor_profile__is_public=True,
         ).select_related("investor_profile", "investor_preferences")[:limit]
 
     @staticmethod

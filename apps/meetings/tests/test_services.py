@@ -1,4 +1,5 @@
 import datetime
+import re
 
 import pytest
 from unittest.mock import patch
@@ -91,18 +92,32 @@ class TestScheduleMeeting:
             MeetingService.schedule_meeting(founder, data)
         assert exc.value.code == "NOT_FOUND"
 
-    def test_raises_if_same_user(self, founder):
-        data = {**SCHEDULE_DATA, "investor_id": founder.id}
-        with pytest.raises(ApplicationError) as exc:
-            MeetingService.schedule_meeting(founder, data)
-        assert exc.value.code == "SELF_MEETING"
-
-    def test_raises_if_role_mismatch(self, founder):
+    def test_non_investor_target_is_not_found(self, founder):
         other_founder = FounderFactory()
-        data = {**SCHEDULE_DATA, "investor_id": other_founder.id}
+        for target in (founder, other_founder):
+            data = {**SCHEDULE_DATA, "investor_id": target.id}
+            with pytest.raises(ApplicationError) as exc:
+                MeetingService.schedule_meeting(founder, data)
+            assert exc.value.code == "NOT_FOUND"
+
+    def test_inactive_investor_is_not_found(self, founder):
+        inactive = InvestorFactory(is_active=False)
+        data = {**SCHEDULE_DATA, "investor_id": inactive.id}
         with pytest.raises(ApplicationError) as exc:
             MeetingService.schedule_meeting(founder, data)
-        assert exc.value.code == "ROLE_MISMATCH"
+        assert exc.value.code == "NOT_FOUND"
+
+    @patch("apps.notifications.services.NotificationService.notify")
+    @patch("apps.activity_feed.services.ActivityFeedService.publish_activity")
+    @patch("apps.realtime.services.RealtimeService.broadcast_to_user")
+    def test_uses_jitsi_link_and_publishes_no_feed_event(
+        self, mock_broadcast, mock_activity, mock_notify,
+        founder, investor, startup, match,
+    ):
+        data = {**SCHEDULE_DATA, "investor_id": investor.id, "startup": startup.id}
+        meeting = MeetingService.schedule_meeting(founder, data)
+        assert re.fullmatch(r"https://meet\.jit\.si/investo-[0-9a-f]{32}", meeting.meeting_link)
+        mock_activity.assert_not_called()
 
 
 class TestConfirmMeeting:
@@ -287,3 +302,29 @@ class TestUpdateAvailability:
         MeetingAvailabilityFactory(user=founder, day_of_week=0)
         slots = MeetingService.get_availability(founder)
         assert len(slots) == 1
+
+
+class TestInvestorBooksMeeting:
+    def test_founder_of_the_startup_is_invited(self, investor, startup, match):
+        start = timezone.now() + datetime.timedelta(days=2)
+        meeting = MeetingService.schedule_meeting(
+            investor,
+            {
+                "title": "Intro",
+                "startup": startup.id,
+                "scheduled_start": start,
+                "scheduled_end": start + datetime.timedelta(minutes=30),
+            },
+        )
+        assert meeting.investor == investor
+        assert set(meeting.participants.values_list("user_id", flat=True)) == {investor.id, startup.owner_id}
+        assert meeting.meeting_link.startswith("https://meet.jit.si/")
+
+    def test_requires_a_startup(self, investor):
+        start = timezone.now() + datetime.timedelta(days=2)
+        with pytest.raises(ApplicationError) as exc:
+            MeetingService.schedule_meeting(
+                investor,
+                {"title": "Intro", "scheduled_start": start, "scheduled_end": start + datetime.timedelta(minutes=30)},
+            )
+        assert exc.value.code == "STARTUP_REQUIRED"

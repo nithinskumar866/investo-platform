@@ -37,6 +37,7 @@ const investorNav = [
   { href: "/chat", label: "Messages", icon: MessageSquare },
   { href: "/meetings", label: "Meetings", icon: Calendar },
   { href: "/investor/deals", label: "Deal Pipeline", icon: Briefcase },
+  { href: "/investor/data-room", label: "Data Room", icon: FileText },
   { href: "/investor/analytics", label: "Analytics", icon: PieChart },
   { href: "/billing", label: "Billing", icon: CreditCard },
 ]
@@ -86,16 +87,17 @@ function SidebarContent({ isMobile = false }: { isMobile?: boolean }) {
           {expanded && <span className="text-base font-bold tracking-tight text-foreground">Investo</span>}
         </div>
         {!isMobile && (
-          <Button variant="ghost" size="icon" onClick={toggleSidebar} className="ml-auto h-6 w-6 text-muted-foreground">
+          <Button variant="ghost" size="icon" onClick={toggleSidebar} aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"} className="ml-auto h-6 w-6 text-muted-foreground">
             {sidebarOpen ? <ChevronLeft className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
           </Button>
         )}
       </div>
       <nav className="flex-1 overflow-y-auto p-2 space-y-1">
         {navItems.map((item) => {
-          const active = pathname === item.href || pathname.startsWith(item.href + "/")
+          const isDashboard = item.href === "/founder" || item.href === "/investor" || item.href === "/admin"
+          const active = pathname === item.href || (!isDashboard && pathname.startsWith(item.href + "/"))
           return (
-            <Link key={item.href} href={item.href}
+            <Link key={item.href} href={item.href} aria-label={expanded ? undefined : item.label}
               className={cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-accent",
                 active ? "bg-accent text-accent-foreground font-medium" : "text-muted-foreground",
@@ -107,7 +109,7 @@ function SidebarContent({ isMobile = false }: { isMobile?: boolean }) {
         })}
       </nav>
       <div className="border-t border-border p-3">
-        <Link href="/notifications" className={cn(
+        <Link href="/notifications" aria-label={expanded ? undefined : "Notifications"} className={cn(
           "flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-accent transition-colors",
           pathname === "/notifications" && "bg-accent",
         )}>
@@ -134,14 +136,13 @@ export function Sidebar() {
 }
 
 export function Topbar() {
-  const { toggleSidebar, toggleCommandPalette } = useUIStore()
   const { user, logout } = useAuthStore()
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b border-border bg-background px-4 lg:px-6">
       <Sheet>
         <SheetTrigger asChild>
-          <Button variant="ghost" size="icon" className="md:hidden">
+          <Button variant="ghost" size="icon" className="md:hidden" aria-label="Open navigation menu">
             <Menu className="h-5 w-5" />
           </Button>
         </SheetTrigger>
@@ -150,15 +151,14 @@ export function Topbar() {
         </SheetContent>
       </Sheet>
       <div className="flex-1" />
-      <Button variant="ghost" size="sm" onClick={toggleCommandPalette} className="text-muted-foreground gap-2">
-        <kbd className="pointer-events-none hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
-          <span className="text-xs">⌘</span>K
-        </kbd>
-        <Search className="h-4 w-4" />
-      </Button>
+      {user?.role !== "admin" && (
+        <Button variant="ghost" size="icon" asChild className="text-muted-foreground">
+          <Link href="/search" aria-label="Search"><Search className="h-4 w-4" /></Link>
+        </Button>
+      )}
       <div className="flex items-center gap-2">
         <span className="hidden text-sm text-muted-foreground md:inline">{user?.email}</span>
-        <Button variant="ghost" size="icon" onClick={logout}>
+        <Button variant="ghost" size="icon" onClick={logout} aria-label="Sign out">
           <LogOut className="h-4 w-4" />
         </Button>
       </div>

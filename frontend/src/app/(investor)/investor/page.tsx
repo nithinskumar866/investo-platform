@@ -1,34 +1,41 @@
 "use client"
 
-import { useInvestorAnalytics, useMatches, useStartups } from "@/hooks/use-api"
+import Link from "next/link"
+import { useInvestorAnalytics, useInvestorDeals, useMatches } from "@/hooks/use-api"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { formatCurrency } from "@/lib/utils"
-import {
-  TrendingUp, DollarSign, Calendar, Activity, ArrowUpRight,
-  Building2, UserCheck, ChevronRight,
-} from "lucide-react"
-import Link from "next/link"
+import { Activity, Bookmark, Building2, ChevronRight, DollarSign, UserCheck } from "lucide-react"
+import { DEAL_STAGES } from "@/lib/constants"
 
-const kpiConfig: Record<string, { label: string; icon: typeof TrendingUp; format?: (v: number) => string; color: string }> = {
-  deal_flow: { label: "Deal Flow", icon: Activity, color: "text-blue-500" },
-  portfolio_size: { label: "Portfolio Size", icon: DollarSign, format: (v) => formatCurrency(v), color: "text-emerald-500" },
-  meetings_this_week: { label: "Meetings This Week", icon: Calendar, color: "text-violet-500" },
-  response_rate: { label: "Response Rate", icon: TrendingUp, format: (v) => `${v}%`, color: "text-amber-500" },
-}
+const kpiConfig = [
+  { key: "matches", label: "Matches", icon: UserCheck, color: "text-blue-500" },
+  { key: "saved_startups", label: "Saved Startups", icon: Bookmark, color: "text-violet-500" },
+  { key: "deal_pipeline_total", label: "Deals in Pipeline", icon: Activity, color: "text-amber-500" },
+  { key: "invested_deals", label: "Closed Investments", icon: DollarSign, color: "text-emerald-500" },
+]
 
 export default function InvestorDashboard() {
   const { data: analytics, isLoading: aLoading } = useInvestorAnalytics()
   const { data: matches, isLoading: mLoading } = useMatches("startup")
-  const { data: startups, isLoading: sLoading } = useStartups({ status: "verified" })
+  const { data: deals } = useInvestorDeals()
 
-  if (aLoading || mLoading || sLoading) return <DashboardSkeleton />
+  if (aLoading || mLoading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-8 w-64" />
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24" />)}
+        </div>
+      </div>
+    )
+  }
 
   const kpiCards = analytics?.kpi_cards ?? {}
   const topMatches = (matches ?? []).slice(0, 5)
+  const total = deals?.length ?? 0
 
   return (
     <div className="space-y-6">
@@ -38,38 +45,25 @@ export default function InvestorDashboard() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {Object.entries(kpiConfig).map(([key, cfg]) => {
-          const item = kpiCards[key] ?? { value: 0, growth: 0 }
-          const Icon = cfg.icon
-          const display = cfg.format ? cfg.format(item.value) : item.value
-          return (
-            <Card key={key}>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">{cfg.label}</CardTitle>
-                <Icon className={`h-4 w-4 ${cfg.color}`} />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{display}</div>
-                {item.growth !== undefined && (
-                  <p className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                    <ArrowUpRight className="h-3 w-3 text-emerald-500" />
-                    <span className="text-emerald-500">{item.growth}%</span> vs last month
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          )
-        })}
+        {kpiConfig.map(({ key, label, icon: Icon, color }) => (
+          <Card key={key}>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
+              <Icon className={`h-4 w-4 ${color}`} />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold" data-testid={`kpi-${key}`}>{kpiCards[key]?.value ?? 0}</div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Recent Matches</CardTitle>
+            <CardTitle>Top Matches</CardTitle>
             <Button variant="ghost" size="sm" asChild>
-              <Link href="/investor/matches">
-                View All <ChevronRight className="ml-1 h-4 w-4" />
-              </Link>
+              <Link href="/investor/matches">View All <ChevronRight className="ml-1 h-4 w-4" /></Link>
             </Button>
           </CardHeader>
           <CardContent>
@@ -78,18 +72,18 @@ export default function InvestorDashboard() {
             ) : (
               <div className="space-y-3">
                 {topMatches.map((m) => (
-                  <div key={m.id} className="flex items-center justify-between rounded-lg border p-3">
-                    <div className="flex items-center gap-3">
-                      <Building2 className="h-8 w-8 rounded-lg bg-primary/10 p-1.5 text-primary" />
-                      <div>
-                        <p className="text-sm font-medium">{m.startup_detail?.name ?? `Startup #${m.startup}`}</p>
-                        <p className="text-xs text-muted-foreground">{m.startup_detail?.tagline}</p>
+                  <Link key={m.id} href={`/startup/${m.startup_id}`} className="flex items-center justify-between gap-2 rounded-lg border p-3 hover:bg-accent/10">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <Building2 className="h-8 w-8 shrink-0 rounded-lg bg-primary/10 p-1.5 text-primary" />
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium">{m.startup_name}</p>
+                        <p className="truncate text-xs text-muted-foreground">{m.startup_tagline}</p>
                       </div>
                     </div>
-                    <Badge variant={m.score >= 80 ? "success" : m.score >= 50 ? "warning" : "secondary"}>
+                    <Badge variant={m.score >= 80 ? "success" : m.score >= 50 ? "warning" : "secondary"} className="shrink-0">
                       {Math.round(m.score)}% Match
                     </Badge>
-                  </div>
+                  </Link>
                 ))}
               </div>
             )}
@@ -97,45 +91,27 @@ export default function InvestorDashboard() {
         </Card>
 
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Pipeline Summary</CardTitle>
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/investor/deals">Open <ChevronRight className="ml-1 h-4 w-4" /></Link>
+            </Button>
           </CardHeader>
           <CardContent className="space-y-4">
-            {["Lead", "Intro", "Meeting", "Term Sheet", "Closed"].map((stage) => {
-              const count = 0
+            {DEAL_STAGES.map((stage) => {
+              const count = (deals ?? []).filter((d) => d.status === stage.value).length
               return (
-                <div key={stage} className="space-y-1">
+                <div key={stage.value} className="space-y-1">
                   <div className="flex items-center justify-between text-sm">
-                    <span>{stage}</span>
+                    <span>{stage.label}</span>
                     <span className="text-muted-foreground">{count}</span>
                   </div>
-                  <Progress value={0} className="h-1.5" />
+                  <Progress value={total ? (count / total) * 100 : 0} className="h-1.5" aria-label={stage.label} />
                 </div>
               )
             })}
           </CardContent>
         </Card>
-      </div>
-    </div>
-  )
-}
-
-function DashboardSkeleton() {
-  return (
-    <div className="space-y-6">
-      <div>
-        <Skeleton className="h-8 w-64" />
-        <Skeleton className="h-4 w-48 mt-2" />
-      </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Card key={i}>
-            <CardContent className="p-6">
-              <Skeleton className="h-4 w-24" />
-              <Skeleton className="h-8 w-16 mt-2" />
-            </CardContent>
-          </Card>
-        ))}
       </div>
     </div>
   )

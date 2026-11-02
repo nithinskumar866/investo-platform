@@ -1,7 +1,7 @@
 from django.db import transaction
 from django.db.models import Count, Q, Avg, Sum, Prefetch
 
-from .models import DataRoom, DataRoomDocument, DocumentAccess, DocumentViewEvent
+from .models import DataRoom, DataRoomAccessRequest, DataRoomDocument, DocumentAccess, DocumentViewEvent
 
 
 class DataRoomRepository:
@@ -118,9 +118,11 @@ class DataRoomRepository:
 
     @staticmethod
     def get_accessible_documents(investor):
-        return DataRoomDocument.objects.filter(
-            Q(data_room__visibility=DataRoom.Visibility.MATCHED_INVESTORS,
-              data_room__startup__investment_opportunities__investor=investor)
+        return DataRoomDocument.objects.exclude(
+            data_room__visibility=DataRoom.Visibility.PRIVATE,
+        ).filter(
+            Q(data_room__access_requests__investor=investor,
+              data_room__access_requests__status=DataRoomAccessRequest.Status.APPROVED)
             | Q(access_grants__investor=investor),
         ).select_related(
             "data_room", "data_room__startup", "uploaded_by",
@@ -153,17 +155,60 @@ class DataRoomRepository:
 
     @staticmethod
     def has_access(document, investor) -> bool:
+        if document.data_room.visibility == DataRoom.Visibility.PRIVATE:
+            return False
         if DocumentAccess.objects.filter(
             document=document, investor=investor,
         ).exists():
             return True
-        if document.data_room.visibility == DataRoom.Visibility.MATCHED_INVESTORS:
-            from apps.matching.models import MatchScore
-            return MatchScore.objects.filter(
-                investor=investor,
-                startup=document.data_room.startup,
-            ).exists()
-        return False
+        return DataRoomAccessRequest.objects.filter(
+            data_room=document.data_room,
+            investor=investor,
+            status=DataRoomAccessRequest.Status.APPROVED,
+        ).exists()
+
+    # ── Access requests ───────────────────────────────────────────
+
+    @staticmethod
+    def rooms_for_investor(startup_id=None):
+        rooms = DataRoom.objects.exclude(
+            visibility=DataRoom.Visibility.PRIVATE,
+        ).filter(
+            startup__is_visible=True, startup__status__in=["active", "funded"],
+        ).select_related("startup")
+        if startup_id:
+            rooms = rooms.filter(startup_id=startup_id)
+        return rooms
+
+    @staticmethod
+    def request_statuses(investor):
+        return dict(
+            DataRoomAccessRequest.objects.filter(investor=investor).values_list("data_room_id", "status"),
+        )
+
+    @staticmethod
+    def request_access(room, investor, message=""):
+        access_request, created = DataRoomAccessRequest.objects.get_or_create(
+            data_room=room, investor=investor, defaults={"message": message},
+        )
+        if not created and access_request.status == DataRoomAccessRequest.Status.DENIED:
+            access_request.status = DataRoomAccessRequest.Status.PENDING
+            access_request.message = message
+            access_request.decided_at = None
+            access_request.save(update_fields=["status", "message", "decided_at"])
+        return access_request
+
+    @staticmethod
+    def requests_for_founder(user):
+        return DataRoomAccessRequest.objects.filter(
+            data_room__startup__owner=user,
+        ).select_related("data_room", "data_room__startup", "investor")
+
+    @staticmethod
+    def get_request(request_id):
+        return DataRoomAccessRequest.objects.select_related(
+            "data_room", "data_room__startup", "investor",
+        ).filter(id=request_id).first()
 
     @staticmethod
     def get_investors_with_access(document):

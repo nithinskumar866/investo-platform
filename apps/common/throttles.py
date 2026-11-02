@@ -43,3 +43,12 @@ class ResendVerificationThrottle(SimpleRateThrottle):
         if email:
             return self.cache_format % {"scope": self.scope, "ident": email.lower().strip()}
         return None
+
+
+class AuthIPThrottle(SimpleRateThrottle):
+    """Per-IP limit for auth endpoints, so guessing across many emails is also capped."""
+
+    scope = "auth_ip"
+
+    def get_cache_key(self, request, view):
+        return self.cache_format % {"scope": self.scope, "ident": self.get_ident(request)}

@@ -1,6 +1,7 @@
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
+from apps.common.permissions import IsAdmin
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
@@ -65,13 +66,13 @@ class MatchIntelligenceViewSet(ViewSet):
             status=status.HTTP_201_CREATED,
         )
 
-    @action(detail=False, methods=["get"])
+    @action(detail=False, methods=["get"], permission_classes=[IsAuthenticated, IsAdmin])
     def analytics(self, request):
         analytics = MatchIntelligenceService.get_analytics()
         serializer = InsightAnalyticsSerializer(analytics)
         return Response(serializer.data)
 
-    @action(detail=False, methods=["get"])
+    @action(detail=False, methods=["get"], permission_classes=[IsAuthenticated, IsAdmin])
     def patterns(self, request):
         patterns = MatchIntelligenceService.get_pattern_analytics()
         serializer = PatternAnalyticsSerializer(patterns)

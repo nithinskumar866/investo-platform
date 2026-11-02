@@ -73,7 +73,7 @@ class CreateMeetingSerializer(serializers.Serializer):
         choices=Meeting.MeetingType.choices,
         default=Meeting.MeetingType.INTRO_CALL,
     )
-    investor_id = serializers.IntegerField()
+    investor_id = serializers.IntegerField(required=False)
     startup = serializers.IntegerField(required=False, allow_null=True)
     scheduled_start = serializers.DateTimeField()
     scheduled_end = serializers.DateTimeField()

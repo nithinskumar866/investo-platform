@@ -1,15 +1,15 @@
 "use client"
 
-import { useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { api } from "@/services/api"
-import { Mail, Loader2, ArrowLeft, CheckCircle2 } from "lucide-react"
+import { useForgotPassword } from "@/hooks/use-api"
+import { Mail, Loader2, ArrowLeft } from "lucide-react"
 
 const forgotSchema = z.object({
   email: z.string().email("Invalid email"),
@@ -18,8 +18,9 @@ const forgotSchema = z.object({
 type ForgotForm = z.infer<typeof forgotSchema>
 
 export default function ForgotPasswordPage() {
-  const [sent, setSent] = useState(false)
-  const [loading, setLoading] = useState(false)
+  const router = useRouter()
+  const forgot = useForgotPassword()
+  const loading = forgot.isPending
 
   const {
     register,
@@ -27,46 +28,20 @@ export default function ForgotPasswordPage() {
     formState: { errors },
   } = useForm<ForgotForm>({ resolver: zodResolver(forgotSchema) })
 
-  const onSubmit = async (data: ForgotForm) => {
-    setLoading(true)
-    try {
-      await api.post("/auth/forgot-password/", data)
-      setSent(true)
-      toast.success("Reset link sent to your email")
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Something went wrong")
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  if (sent) {
-    return (
-      <div className="rounded-2xl border border-white/5 bg-white/[0.03] p-8 shadow-2xl shadow-black/40 backdrop-blur-xl">
-        <div className="text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10">
-            <CheckCircle2 className="h-6 w-6 text-emerald-400" />
-          </div>
-          <h1 className="text-2xl font-semibold tracking-tight text-white">Check your email</h1>
-          <p className="mt-2 text-sm text-white/50">
-            If an account exists, a password reset link has been sent.
-          </p>
-        </div>
-        <Link href="/auth/login" className="mt-6 block">
-          <Button variant="outline" className="w-full border-white/10 bg-white/5 text-white hover:bg-white/10">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Sign In
-          </Button>
-        </Link>
-      </div>
-    )
+  const onSubmit = (data: ForgotForm) => {
+    forgot.mutate(data.email, {
+      onSuccess: () => {
+        toast.success("If the account exists, a reset code has been sent")
+        router.push(`/auth/reset-password?email=${encodeURIComponent(data.email)}`)
+      },
+    })
   }
 
   return (
     <div className="rounded-2xl border border-white/5 bg-white/[0.03] p-8 shadow-2xl shadow-black/40 backdrop-blur-xl">
       <div className="mb-8 text-center">
         <h1 className="text-2xl font-semibold tracking-tight text-white">Forgot password?</h1>
-        <p className="mt-2 text-sm text-white/50">Enter your email and we&apos;ll send you a reset link</p>
+        <p className="mt-2 text-sm text-white/50">Enter your email and we&apos;ll send you a 6-digit reset code</p>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
@@ -86,7 +61,7 @@ export default function ForgotPasswordPage() {
               Sending...
             </span>
           ) : (
-            "Send Reset Link"
+            "Send Reset Code"
           )}
         </Button>
       </form>

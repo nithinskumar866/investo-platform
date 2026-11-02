@@ -192,7 +192,7 @@ class StartupTeamMember(models.Model):
 
     class Meta:
         db_table = "startups_team_member"
-        ordering = ["order", "is_founder", "name"]
+        ordering = ["order", "-is_founder", "name"]
 
     def __str__(self):
         return f"{self.name} - {self.role} ({self.startup.name})"

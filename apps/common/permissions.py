@@ -23,7 +23,9 @@ class IsRole(BasePermission):
 
 class IsAdmin(BasePermission):
     def has_permission(self, request: Request, view: View) -> bool:
-        return request.user.is_authenticated and request.user.role == "admin"
+        return request.user.is_authenticated and (
+            request.user.role == "admin" or request.user.is_staff
+        )
 
 
 class IsReadOnly(BasePermission):

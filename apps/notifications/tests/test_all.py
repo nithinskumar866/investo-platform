@@ -2,6 +2,8 @@ import pytest
 from django.utils import timezone
 from unittest.mock import patch, PropertyMock
 
+from conftest import auth_header
+
 from apps.accounts.models import User
 from apps.notifications.models import Notification, NotificationPreference
 from apps.notifications.services import NotificationService
@@ -42,6 +44,12 @@ def recipient(db):
     return User.objects.create_user(
         email="recipient@example.com", password="testpass123", role="entrepreneur",
     )
+
+
+@pytest.fixture
+def recipient_client(api_client, recipient):
+    api_client.credentials(**auth_header(recipient))
+    return api_client
 
 
 @pytest.fixture
@@ -107,7 +115,7 @@ class TestNotificationPreferenceModel:
 
 class TestNotificationService:
     def test_notify_creates_notification(self, recipient, investor):
-        with patch("apps.notifications.services.RealtimeService"):
+        with patch("apps.realtime.services.RealtimeService"):
             with patch("apps.notifications.services.EmailService"):
                 n = NotificationService.notify(
                     recipient=recipient,
@@ -134,7 +142,7 @@ class TestNotificationService:
         assert n is None
 
     def test_notify_deduplicates(self, recipient, investor):
-        with patch("apps.notifications.services.RealtimeService"):
+        with patch("apps.realtime.services.RealtimeService"):
             with patch("apps.notifications.services.EmailService"):
                 NotificationService.notify(
                     recipient=recipient,
@@ -152,7 +160,7 @@ class TestNotificationService:
 
     def test_notify_sends_email(self, recipient, investor):
         NotificationPreference.objects.create(user=recipient)
-        with patch("apps.notifications.services.RealtimeService"):
+        with patch("apps.realtime.services.RealtimeService"):
             with patch(
                 "apps.notifications.services.EmailService.send_match_notification",
             ) as mock_email:
@@ -215,7 +223,7 @@ class TestNotificationService:
         assert updated.marketing_notifications is True
 
     def test_notify_many(self, recipient, investor):
-        with patch("apps.notifications.services.RealtimeService"):
+        with patch("apps.realtime.services.RealtimeService"):
             with patch("apps.notifications.services.EmailService"):
                 results = NotificationService.notify_many([
                     {
@@ -246,21 +254,39 @@ class TestNotificationViewSet:
         assert resp.status_code == 200
         assert "count" in resp.json()
 
-    def test_read(self, investor_client, notification):
-        resp = investor_client.post(
+    def test_read(self, recipient_client, notification):
+        resp = recipient_client.post(
             f"/api/v1/notifications/{notification.id}/read/",
         )
         assert resp.status_code == 200
+        notification.refresh_from_db()
+        assert notification.is_read is True
+
+    def test_read_someone_elses_notification_404(self, investor_client, notification):
+        resp = investor_client.post(
+            f"/api/v1/notifications/{notification.id}/read/",
+        )
+        assert resp.status_code == 404
+        notification.refresh_from_db()
+        assert notification.is_read is False
 
     def test_read_all(self, investor_client, notification):
         resp = investor_client.post("/api/v1/notifications/read-all/")
         assert resp.status_code == 200
 
-    def test_destroy(self, investor_client, notification):
-        resp = investor_client.delete(
+    def test_destroy(self, recipient_client, notification):
+        resp = recipient_client.delete(
             f"/api/v1/notifications/{notification.id}/",
         )
         assert resp.status_code == 204
+        assert not Notification.objects.filter(id=notification.id).exists()
+
+    def test_destroy_someone_elses_notification_404(self, investor_client, notification):
+        resp = investor_client.delete(
+            f"/api/v1/notifications/{notification.id}/",
+        )
+        assert resp.status_code == 404
+        assert Notification.objects.filter(id=notification.id).exists()
 
     def test_preferences_get(self, investor_client, preferences):
         resp = investor_client.get("/api/v1/notifications/preferences/")

@@ -1,5 +1,7 @@
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
+from django.views.static import serve
+from decouple import config
 from django.conf import settings
 from django.conf.urls.static import static
 
@@ -35,6 +37,10 @@ urlpatterns = [
     path("api/v1/settings/", include("apps.settings.urls")),
     path("api/v1/", include("apps.common.urls")),
 ]
+
+# Demo hosting only: serves uploads from local disk with no access check.
+if config("SERVE_MEDIA", default=False, cast=bool):
+    urlpatterns += [re_path(r"^media/(?P<path>.*)$", serve, {"document_root": settings.MEDIA_ROOT})]
 
 if settings.DEBUG:
     urlpatterns += [

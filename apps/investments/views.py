@@ -238,6 +238,13 @@ class StartupPipelineViewSet(viewsets.GenericViewSet):
         result = InvestmentOpportunityDetailSerializer(opportunity)
         return Response({"status": "success", "data": result.data})
 
+    @extend_schema(summary="Accept the term sheet so the investor can close")
+    @action(detail=True, methods=["post"])
+    def accept_term_sheet(self, request, pk=None):
+        opportunity = InvestmentService.accept_term_sheet(pk, request.user)
+        result = InvestmentOpportunityDetailSerializer(opportunity)
+        return Response({"status": "success", "data": result.data})
+
     @extend_schema(summary="Reject an incoming offer")
     @action(detail=True, methods=["post"])
     def reject(self, request, pk=None):

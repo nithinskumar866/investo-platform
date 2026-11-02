@@ -1,6 +1,7 @@
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
+from apps.common.permissions import IsAdmin
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
@@ -173,7 +174,7 @@ class SearchViewSet(ViewSet):
         serializer = SearchHistorySerializer(history, many=True)
         return Response({"results": serializer.data})
 
-    @action(detail=False, methods=["get"])
+    @action(detail=False, methods=["get"], permission_classes=[IsAuthenticated, IsAdmin])
     def analytics(self, request):
         analytics = SearchService.get_analytics()
         serializer = SearchAnalyticsSerializer(analytics)

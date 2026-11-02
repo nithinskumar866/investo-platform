@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { Suspense, useEffect, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useLogin } from "@/hooks/use-api"
 import { useAuthStore } from "@/stores/auth"
-import { api } from "@/services/api"
+import { dashboardPath, safeNext } from "@/lib/utils"
 import { Mail, Lock, Eye, EyeOff, Loader2 } from "lucide-react"
 
 const loginSchema = z.object({
@@ -21,12 +21,12 @@ const loginSchema = z.object({
 
 type LoginForm = z.infer<typeof loginSchema>
 
-export default function LoginPage() {
+function LoginCard() {
   const router = useRouter()
-  const setUser = useAuthStore((s) => s.setUser)
+  const next = safeNext(useSearchParams().get("next"))
+  const { signIn, user, initialized } = useAuthStore()
   const loginMutation = useLogin()
-  const [showOtp, setShowOtp] = useState(false)
-  const [loginEmail, setLoginEmail] = useState("")
+  const [formError, setFormError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
 
   const {
@@ -35,32 +35,20 @@ export default function LoginPage() {
     formState: { errors },
   } = useForm<LoginForm>({ resolver: zodResolver(loginSchema) })
 
+  // Already signed in (e.g. a saved tab on /auth/login): go straight to the app.
+  useEffect(() => {
+    if (initialized && user) router.replace(next ?? dashboardPath(user.role))
+  }, [initialized, user, next, router])
+
   const onSubmit = (data: LoginForm) => {
+    setFormError(null)
     loginMutation.mutate(data, {
       onSuccess: (res) => {
-        api.setToken(res.tokens.access)
-        localStorage.setItem("refresh_token", res.tokens.refresh)
-        setUser(res.user)
-        console.log("LOGIN SUCCESS USER:", JSON.stringify(res.user))
+        signIn(res.user, res.tokens)
         toast.success("Welcome back!")
-        if (res.user.role === "entrepreneur") router.push("/founder")
-        else if (res.user.role === "investor") router.push("/investor")
-        else if (res.user.role === "admin") router.push("/admin")
-        else router.push("/auth/login")
       },
-      onError: (err: Error) => {
-        if (err.message.toLowerCase().includes("otp") || err.message.toLowerCase().includes("verify")) {
-          setLoginEmail(data.email)
-          setShowOtp(true)
-        }
-        toast.error(err.message)
-      },
+      onError: (err: Error) => setFormError(err.message),
     })
-  }
-
-  if (showOtp) {
-    router.push(`/auth/otp?email=${encodeURIComponent(loginEmail)}`)
-    return null
   }
 
   return (
@@ -76,6 +64,7 @@ export default function LoginPage() {
           <div className="relative">
             <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
             <Input
+              aria-label="Email"
               {...register("email")}
               type="email"
               placeholder="you@example.com"
@@ -96,6 +85,7 @@ export default function LoginPage() {
           <div className="relative">
             <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
             <Input
+              aria-label="Password"
               {...register("password")}
               type={showPassword ? "text" : "password"}
               placeholder="Enter your password"
@@ -104,6 +94,7 @@ export default function LoginPage() {
             />
             <button
               type="button"
+              aria-label={showPassword ? "Hide password" : "Show password"}
               onClick={() => setShowPassword(!showPassword)}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/50 transition-colors"
             >
@@ -112,6 +103,8 @@ export default function LoginPage() {
           </div>
           {errors.password && <p className="text-xs text-red-400">{errors.password.message}</p>}
         </div>
+
+        {formError && <p role="alert" className="rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">{formError}</p>}
 
         <Button
           type="submit"
@@ -139,10 +132,20 @@ export default function LoginPage() {
       </div>
 
       <div className="mt-6 rounded-lg border border-white/5 bg-white/[0.02] p-3">
-        <p className="text-center text-xs text-white/25">
-          Demo: founder@investo.com / founder123
-        </p>
+        <p className="text-center text-xs font-medium text-white/50">Demo accounts (seeded test data)</p>
+        <ul className="mt-1 space-y-0.5 text-center text-xs text-white/40">
+          <li>Founder: founder@investo.com / founder123</li>
+          <li>Investor: investor@investo.com / investor123</li>
+        </ul>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginCard />
+    </Suspense>
   )
 }

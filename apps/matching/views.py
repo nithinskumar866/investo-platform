@@ -58,7 +58,7 @@ class InvestorMatchViewSet(viewsets.ReadOnlyModelViewSet):
         reload = request.GET.get("reload", "").lower() == "true"
         is_async = request.GET.get("async", "").lower() == "true"
 
-        if reload:
+        if reload or not self.get_queryset().exists():
             if is_async:
                 from .tasks import generate_investor_matches_task
                 generate_investor_matches_task.delay(request.user.id, limit=limit)
@@ -67,18 +67,6 @@ class InvestorMatchViewSet(viewsets.ReadOnlyModelViewSet):
 
         matches = self.get_queryset()
         
-        # DEBUG START
-        pref = MatchingRepository.get_investor_by_user(request.user)
-        startups = MatchingRepository.get_startups_for_investor(request.user)
-        if request.GET.get('debug'):
-            return Response({
-                "pref_exists": pref is not None,
-                "startups_count": startups.count(),
-                "startups": [s.name for s in startups],
-                "matches_count": matches.count()
-            })
-        # DEBUG END
-
         matches = self.get_queryset()
         page = self.paginate_queryset(matches)
         if page is not None:

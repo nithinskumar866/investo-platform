@@ -1,6 +1,7 @@
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
+from apps.common.permissions import IsAdmin
 from rest_framework.response import Response
 
 from apps.common.exceptions import ApplicationError
@@ -120,7 +121,7 @@ def investor_charts(request):
 
 
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsAdmin])
 def reports(request):
     serializer = DateRangeSerializer(data=request.query_params)
     serializer.is_valid(raise_exception=True)

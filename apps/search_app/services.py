@@ -21,7 +21,7 @@ class SearchService:
             )
 
         results = SearchService._execute_search(
-            domain, query, filters, sort, limit,
+            domain, query, filters, sort, limit, user=user,
         )
 
         SearchRepository.record_history(
@@ -31,7 +31,9 @@ class SearchService:
         return results
 
     @staticmethod
-    def _execute_search(domain, query, filters, sort, limit):
+    def _execute_search(domain, query, filters, sort, limit, user=None):
+        if domain == "opportunities":
+            return SearchRepository.search_opportunities(query, filters, sort, limit, user=user)
         mapping = {
             "startups": SearchRepository.search_startups,
             "investors": SearchRepository.search_investors,

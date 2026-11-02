@@ -1,200 +1,168 @@
 "use client"
 
 import { useState } from "react"
-import {
-  Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter,
-} from "@/components/ui/card"
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useHealthCheck, useSystemMetrics } from "@/hooks/use-api"
+import { useHealthCheck, useOpsAlerts, useOpsErrors, useSystemMetrics } from "@/hooks/use-api"
 import { formatRelativeTime } from "@/lib/utils"
-import {
-  Activity, Server, Database, Wifi, HardDrive, Cpu,
-  AlertTriangle, CheckCircle, RefreshCw, Clock, BarChart3,
-} from "lucide-react"
+import { humanize } from "@/lib/constants"
+import { AlertTriangle, CheckCircle, RefreshCw } from "lucide-react"
 
-const serviceLabels: Record<string, { label: string; icon: typeof Server }> = {
-  api: { label: "API Server", icon: Server },
-  database: { label: "Database", icon: Database },
-  redis: { label: "Redis", icon: Cpu },
-  celery: { label: "Celery Workers", icon: Activity },
-  storage: { label: "Storage", icon: HardDrive },
-}
-
-interface ErrorEntry {
-  id: number
-  service: string
-  message: string
-  level: string
-  timestamp: string
-}
+const SEVERITIES = ["all", "warning", "error", "critical"]
 
 export default function AdminOpsPage() {
   const { data: health, isLoading: healthLoading } = useHealthCheck()
   const { data: metrics, isLoading: metricsLoading } = useSystemMetrics()
-  const [errorFilter, setErrorFilter] = useState<string>("all")
+  const { data: alerts, refetch: refetchAlerts, isFetching: alertsFetching } = useOpsAlerts()
+  const [severity, setSeverity] = useState("all")
+  const { data: errors } = useOpsErrors(severity === "all" ? undefined : severity)
 
-  const healthData = health as Record<string, { status: string; detail: string }> | undefined
-  const sysMetrics = metrics as Record<string, unknown> | undefined
-  const recentErrors = (sysMetrics?.recent_errors as ErrorEntry[]) ?? []
-
-  const isLoading = healthLoading || metricsLoading
-
-  if (isLoading) {
+  if (healthLoading || metricsLoading) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-8 w-48" />
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-28" />
-          ))}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28" />)}
         </div>
-        <div className="grid gap-4 lg:grid-cols-2">
-          <Skeleton className="h-72" />
-          <Skeleton className="h-72" />
-        </div>
+        <Skeleton className="h-72" />
       </div>
     )
   }
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Observability</h1>
-        <p className="text-muted-foreground">System health, metrics, and alerting</p>
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Observability</h1>
+          <p className="text-muted-foreground">System health, metrics, and alerting</p>
+        </div>
+        {health && <Badge variant={health.overall === "healthy" ? "success" : "warning"} data-testid="overall-health">Overall: {health.overall}</Badge>}
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        {Object.entries(serviceLabels).map(([key, { label, icon: Icon }]) => {
-          const svc = healthData?.[key]
-          const isHealthy = svc?.status === "healthy" || svc?.status === "ok"
-          return (
-            <Card key={key}>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
-                <Icon className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent className="space-y-1">
-                <div className="flex items-center gap-2">
-                  {isHealthy ? (
-                    <CheckCircle className="h-4 w-4 text-emerald-500" />
-                  ) : (
-                    <AlertTriangle className="h-4 w-4 text-destructive" />
-                  )}
-                  <span className="text-sm font-medium">{svc?.status ?? "unknown"}</span>
-                </div>
-                {svc?.detail && (
-                  <p className="text-xs text-muted-foreground truncate">{svc.detail}</p>
-                )}
-              </CardContent>
-            </Card>
-          )
-        })}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {Object.entries(health?.services ?? {}).map(([key, svc]) => (
+          <Card key={key} data-testid={`service-${key}`}>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium capitalize text-muted-foreground">{humanize(key)}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1">
+              <div className="flex items-center gap-2">
+                {svc.status === "healthy" ? <CheckCircle className="h-4 w-4 text-emerald-500" /> : <AlertTriangle className="h-4 w-4 text-amber-500" />}
+                <span className="text-sm font-medium">{svc.status}</span>
+              </div>
+              <p className="truncate text-xs text-muted-foreground">{svc.detail}</p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Request Metrics</CardTitle>
-            <CardDescription>API request rates and latencies</CardDescription>
+            <CardTitle>Request metrics</CardTitle>
+            <CardDescription>Since the metrics store last reset</CardDescription>
           </CardHeader>
-          <CardContent className="flex items-center justify-center h-60">
-            <div className="text-center text-muted-foreground">
-              <BarChart3 className="h-8 w-8 mx-auto mb-2" />
-              <p className="text-sm">Chart placeholder</p>
-              {sysMetrics?.api ? (
-                <div className="mt-4 space-y-1 text-xs">
-                  {Object.entries(sysMetrics.api as Record<string, unknown>).map(([k, v]) => (
-                    <p key={k} className="capitalize">{k.replace("_", " ")}: {String(v)}</p>
+          <CardContent className="space-y-4">
+            {metrics && (
+              <>
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                  {[
+                    ["Requests", metrics.api.total_requests],
+                    ["Avg ms", metrics.api.avg_duration_ms],
+                    ["Max ms", metrics.api.max_duration_ms],
+                    ["Error rate", `${metrics.api.error_rate}%`],
+                  ].map(([label, value]) => (
+                    <div key={label}>
+                      <p className="text-xs text-muted-foreground">{label}</p>
+                      <p className="text-lg font-semibold">{value}</p>
+                    </div>
                   ))}
                 </div>
-              ) : null}
-            </div>
+                <div>
+                  <p className="mb-1 text-xs text-muted-foreground">Top endpoints</p>
+                  <ul className="space-y-1 text-xs">
+                    {metrics.api.top_endpoints.map((e) => (
+                      <li key={e.endpoint} className="flex justify-between gap-2">
+                        <span className="truncate font-mono">{e.endpoint}</span>
+                        <span className="shrink-0 text-muted-foreground">{e.count} calls, {e.avg_duration} ms</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Active users (24h): {metrics.system.active_users_24h} &middot; Queue: {metrics.queue.total}
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle>Alert Rules</CardTitle>
-            <CardDescription>Active monitoring alerts</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {[
-              { rule: "High error rate (>5%)", severity: "critical", status: "triggered" },
-              { rule: "API latency > 500ms", severity: "warning", status: "ok" },
-              { rule: "Database connection pool exhaustion", severity: "critical", status: "ok" },
-              { rule: "Celery queue backlog > 1000", severity: "warning", status: "ok" },
-              { rule: "Disk usage > 80%", severity: "info", status: "ok" },
-            ].map((alert, i) => (
-              <div key={i} className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className={`h-2 w-2 rounded-full ${
-                    alert.status === "triggered" ? "bg-destructive" : "bg-emerald-500"
-                  }`} />
-                  <p className="text-sm">{alert.rule}</p>
-                </div>
-                <Badge variant={alert.severity === "critical" ? "destructive" : alert.severity === "warning" ? "secondary" : "default"}>
-                  {alert.severity}
-                </Badge>
-              </div>
-            ))}
-          </CardContent>
-          <CardFooter>
-            <Button variant="outline" size="sm" className="w-full">
-              <RefreshCw className="h-4 w-4 mr-2" /> Refresh Alerts
+          <CardHeader className="flex flex-row items-start justify-between">
+            <div>
+              <CardTitle>Alerts</CardTitle>
+              <CardDescription>{alerts ? `${alerts.summary.triggered} triggered, ${alerts.summary.resolved} resolved` : "Loading..."}</CardDescription>
+            </div>
+            <Button variant="outline" size="sm" disabled={alertsFetching} onClick={() => refetchAlerts()}>
+              <RefreshCw className="mr-1 h-3 w-3" /> Refresh
             </Button>
-          </CardFooter>
+          </CardHeader>
+          <CardContent>
+            {!alerts?.alerts.length ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">No alerts have been raised.</p>
+            ) : (
+              <ul className="divide-y">
+                {alerts.alerts.map((a) => (
+                  <li key={a.id} className="flex items-center justify-between gap-2 py-2 text-sm">
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{a.rule_name}</p>
+                      <p className="text-xs text-muted-foreground">{a.metric}: {a.metric_value} (limit {a.threshold})</p>
+                    </div>
+                    <Badge variant={a.status === "triggered" ? "destructive" : "secondary"}>{a.status}</Badge>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
         </Card>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Recent Errors</CardTitle>
-          <CardDescription>Latest system errors and exceptions</CardDescription>
+          <CardTitle>Recent errors</CardTitle>
+          <CardDescription>{errors ? `${errors.summary.total} logged in total` : "Loading..."}</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-2 mb-4">
-            {["all", "error", "warning", "critical"].map((level) => (
-              <Button
-                key={level}
-                variant={errorFilter === level ? "default" : "outline"}
-                size="sm"
-                onClick={() => setErrorFilter(level)}
-              >
+          <div className="mb-4 flex flex-wrap gap-2">
+            {SEVERITIES.map((level) => (
+              <Button key={level} variant={severity === level ? "default" : "outline"} size="sm" onClick={() => setSeverity(level)}>
                 {level.charAt(0).toUpperCase() + level.slice(1)}
               </Button>
             ))}
           </div>
-          <div className="divide-y">
-            {recentErrors
-              .filter((e) => errorFilter === "all" || e.level === errorFilter)
-              .map((err) => (
-                <div key={err.id} className="flex items-start justify-between py-3">
-                  <div className="flex items-start gap-3">
-                    <AlertTriangle className={`h-4 w-4 mt-0.5 ${
-                      err.level === "critical" ? "text-destructive" : err.level === "warning" ? "text-amber-500" : "text-muted-foreground"
-                    }`} />
-                    <div>
-                      <p className="text-sm font-medium">{err.message}</p>
-                      <p className="text-xs text-muted-foreground">{err.service}</p>
-                    </div>
+          {!errors?.errors.length ? (
+            <div className="py-8 text-center text-sm text-muted-foreground">
+              <CheckCircle className="mx-auto mb-2 h-6 w-6 text-emerald-500" />
+              No errors logged
+            </div>
+          ) : (
+            <ul className="divide-y">
+              {errors.errors.map((err) => (
+                <li key={err.id} className="flex items-start justify-between gap-3 py-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium">{err.message}</p>
+                    <p className="text-xs text-muted-foreground">{err.source} &middot; {err.error_type}{err.user_email ? ` · ${err.user_email}` : ""}</p>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Badge variant={err.level === "critical" ? "destructive" : err.level === "warning" ? "secondary" : "default"}>
-                      {err.level}
-                    </Badge>
-                    <span className="text-xs text-muted-foreground">{formatRelativeTime(err.timestamp)}</span>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <Badge variant={err.severity === "critical" || err.severity === "error" ? "destructive" : "secondary"}>{err.severity}</Badge>
+                    <span className="text-xs text-muted-foreground">{formatRelativeTime(err.created_at)}</span>
                   </div>
-                </div>
+                </li>
               ))}
-            {recentErrors.length === 0 && (
-              <div className="py-8 text-center text-sm text-muted-foreground">
-                <CheckCircle className="h-6 w-6 mx-auto mb-2 text-emerald-500" />
-                No recent errors
-              </div>
-            )}
-          </div>
+            </ul>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -148,6 +148,20 @@ class InvestmentService:
                 "INVALID_TRANSITION", 400,
             )
 
+        S = InvestmentOpportunity.Status
+        if new_status in (S.TERM_SHEET_SENT, S.INVESTED):
+            raise ApplicationError(
+                "Use the term sheet and close actions for this stage",
+                "INVALID_TRANSITION", 400,
+            )
+        if (new_status == S.REJECTED and user.role == "investor") or (
+            new_status == S.WITHDRAWN and user.role == "entrepreneur"
+        ):
+            raise ApplicationError(
+                "Founders reject deals; investors withdraw from them",
+                "INVALID_TRANSITION", 400,
+            )
+
         old_status = opportunity.status
         opportunity.status = new_status
         if notes:
@@ -240,6 +254,7 @@ class InvestmentService:
             )
 
         opportunity.status = InvestmentOpportunity.Status.TERM_SHEET_SENT
+        opportunity.founder_accepted_at = None
         if "amount_offered" in term_data:
             opportunity.amount_offered = term_data["amount_offered"]
         if "equity_offered" in term_data:
@@ -284,6 +299,31 @@ class InvestmentService:
 
     @staticmethod
     @transaction.atomic
+    def accept_term_sheet(opportunity_id, user):
+        opportunity = InvestmentService._get_validated_opportunity(
+            opportunity_id, user, "entrepreneur",
+        )
+        if opportunity.status != InvestmentOpportunity.Status.TERM_SHEET_SENT:
+            raise ApplicationError(
+                "There is no term sheet to accept on this deal", "INVALID_STATE", 400,
+            )
+        opportunity.founder_accepted_at = timezone.now()
+        opportunity.save(update_fields=["founder_accepted_at", "updated_at"])
+        InvestmentRepository.record_activity(opportunity, user, "term_sheet_accepted", {})
+
+        from apps.notifications.services import NotificationService
+        NotificationService.notify(
+            recipient=opportunity.investor,
+            notification_type="system",
+            title="Term Sheet Accepted",
+            message=f"{opportunity.startup.name} accepted your term sheet. You can now close the deal.",
+            actor=user,
+            data={"opportunity_id": opportunity.id, "startup_id": opportunity.startup_id},
+        )
+        return opportunity
+
+    @staticmethod
+    @transaction.atomic
     def mark_invested(opportunity_id, user, deal_data):
         opportunity = InvestmentService._get_validated_opportunity(
             opportunity_id, user, "investor",
@@ -293,6 +333,11 @@ class InvestmentService:
             raise ApplicationError(
                 "Deal must be at 'term sheet sent' stage to mark invested",
                 "INVALID_STATE", 400,
+            )
+        if not opportunity.founder_accepted_at:
+            raise ApplicationError(
+                "The founder must accept the term sheet before the deal can close",
+                "NOT_ACCEPTED", 400,
             )
 
         opportunity.status = InvestmentOpportunity.Status.INVESTED
@@ -377,7 +422,7 @@ class InvestmentService:
     @transaction.atomic
     def reject_deal(opportunity_id, user, reason=None):
         opportunity = InvestmentService._get_validated_opportunity(
-            opportunity_id, user, user.role,
+            opportunity_id, user, "entrepreneur",
         )
 
         if opportunity.status in [

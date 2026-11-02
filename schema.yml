@@ -5,6 +5,614 @@ info:
   description: Startup Ecosystem Platform API - Connect entrepreneurs, investors,
     mentors, and talent.
 paths:
+  /api/v1/activity/feed/:
+    get:
+      operationId: activity_feed_retrieve
+      tags:
+      - activity
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/activity/feed/{id}/:
+    get:
+      operationId: activity_feed_retrieve_2
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - activity
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/activity/feed/{id}/bookmark/:
+    post:
+      operationId: activity_feed_bookmark_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - activity
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    delete:
+      operationId: activity_feed_bookmark_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - activity
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/activity/feed/{id}/comment/:
+    post:
+      operationId: activity_feed_comment_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - activity
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/activity/feed/{id}/comments/:
+    get:
+      operationId: activity_feed_comments_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - activity
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/activity/feed/{id}/delete_comment/:
+    delete:
+      operationId: activity_feed_delete_comment_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - activity
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/activity/feed/{id}/react/:
+    post:
+      operationId: activity_feed_react_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - activity
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    delete:
+      operationId: activity_feed_react_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - activity
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/activity/feed/analytics/:
+    get:
+      operationId: activity_feed_analytics_retrieve
+      tags:
+      - activity
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/activity/feed/bookmarks/:
+    get:
+      operationId: activity_feed_bookmarks_retrieve
+      tags:
+      - activity
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/activity/feed/discover/:
+    get:
+      operationId: activity_feed_discover_retrieve
+      tags:
+      - activity
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/activity/feed/trending/:
+    get:
+      operationId: activity_feed_trending_retrieve
+      tags:
+      - activity
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/audit/:
+    get:
+      operationId: admin_audit_retrieve
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/audit/{log_id}/:
+    get:
+      operationId: admin_audit_retrieve_2
+      parameters:
+      - in: path
+        name: log_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/dashboard/:
+    get:
+      operationId: admin_dashboard_retrieve
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/documents/:
+    get:
+      operationId: admin_documents_retrieve
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/documents/{document_id}/views/:
+    get:
+      operationId: admin_documents_views_retrieve
+      parameters:
+      - in: path
+        name: document_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/investments/:
+    get:
+      operationId: admin_investments_retrieve
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/investments/pipeline/:
+    get:
+      operationId: admin_investments_pipeline_retrieve
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/revenue/:
+    get:
+      operationId: admin_revenue_retrieve
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/risk/:
+    get:
+      operationId: admin_risk_retrieve
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/startups/:
+    get:
+      operationId: admin_startups_retrieve
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/startups/{startup_id}/:
+    get:
+      operationId: admin_startups_retrieve_2
+      parameters:
+      - in: path
+        name: startup_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/startups/{startup_id}/moderate/:
+    post:
+      operationId: admin_startups_moderate_create
+      parameters:
+      - in: path
+        name: startup_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/startups/{startup_id}/verify/:
+    post:
+      operationId: admin_startups_verify_create
+      parameters:
+      - in: path
+        name: startup_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/tickets/:
+    get:
+      operationId: admin_tickets_retrieve
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/tickets/{ticket_id}/:
+    get:
+      operationId: admin_tickets_retrieve_2
+      parameters:
+      - in: path
+        name: ticket_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/tickets/{ticket_id}/messages/:
+    get:
+      operationId: admin_tickets_messages_retrieve
+      parameters:
+      - in: path
+        name: ticket_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/tickets/{ticket_id}/send/:
+    post:
+      operationId: admin_tickets_send_create
+      parameters:
+      - in: path
+        name: ticket_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/tickets/{ticket_id}/update/:
+    patch:
+      operationId: admin_tickets_update_partial_update
+      parameters:
+      - in: path
+        name: ticket_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/tickets/create/:
+    post:
+      operationId: admin_tickets_create_create
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/users/:
+    get:
+      operationId: admin_users_retrieve
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/users/{user_id}/:
+    get:
+      operationId: admin_users_retrieve_2
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/users/{user_id}/restore/:
+    post:
+      operationId: admin_users_restore_create
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/users/{user_id}/suspend/:
+    post:
+      operationId: admin_users_suspend_create
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/users/{user_id}/verify/:
+    post:
+      operationId: admin_users_verify_create
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/analytics/founder/charts/:
+    get:
+      operationId: analytics_founder_charts_retrieve
+      tags:
+      - analytics
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/analytics/founder/dashboard/:
+    get:
+      operationId: analytics_founder_dashboard_retrieve
+      tags:
+      - analytics
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/analytics/founder/funnel/:
+    get:
+      operationId: analytics_founder_funnel_retrieve
+      tags:
+      - analytics
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/analytics/investor/charts/:
+    get:
+      operationId: analytics_investor_charts_retrieve
+      tags:
+      - analytics
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/analytics/investor/dashboard/:
+    get:
+      operationId: analytics_investor_dashboard_retrieve
+      tags:
+      - analytics
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/analytics/investor/funnel/:
+    get:
+      operationId: analytics_investor_funnel_retrieve
+      tags:
+      - analytics
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/analytics/reports/:
+    get:
+      operationId: analytics_reports_retrieve
+      tags:
+      - analytics
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
   /api/v1/auth/forgot-password/:
     post:
       operationId: auth_forgot_password_create
@@ -141,6 +749,30 @@ paths:
       responses:
         '200':
           description: No response body
+  /api/v1/auth/profile/entrepreneur/completeness/:
+    get:
+      operationId: auth_profile_entrepreneur_completeness_retrieve
+      summary: Get entrepreneur profile completeness
+      tags:
+      - Profile
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/auth/profile/entrepreneur/startups/:
+    get:
+      operationId: auth_profile_entrepreneur_startups_retrieve
+      summary: Get startups for the current entrepreneur profile
+      tags:
+      - Profile
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
   /api/v1/auth/profile/investor/:
     get:
       operationId: auth_profile_investor_retrieve
@@ -161,6 +793,133 @@ paths:
       security:
       - jwtAuth: []
       - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/auth/profile/investor/completeness/:
+    get:
+      operationId: auth_profile_investor_completeness_retrieve
+      summary: Get investor profile completeness
+      tags:
+      - Profile
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/auth/profile/investor/statistics/:
+    get:
+      operationId: auth_profile_investor_statistics_retrieve
+      summary: Get investor profile statistics
+      tags:
+      - Profile
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/auth/profiles/entrepreneur/:
+    get:
+      operationId: auth_profiles_entrepreneur_retrieve
+      summary: List public entrepreneur profiles
+      parameters:
+      - in: query
+        name: industry
+        schema:
+          type: string
+        description: Filter by industry
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Search by name, tagline, description
+      tags:
+      - Profiles
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/auth/profiles/entrepreneur/{profile_id}/:
+    get:
+      operationId: auth_profiles_entrepreneur_retrieve_2
+      summary: Get a public entrepreneur profile by ID
+      parameters:
+      - in: path
+        name: profile_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Profiles
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/auth/profiles/investor/:
+    get:
+      operationId: auth_profiles_investor_retrieve
+      summary: List public investor profiles
+      parameters:
+      - in: query
+        name: geography
+        schema:
+          type: string
+        description: Filter by preferred geography
+      - in: query
+        name: industry
+        schema:
+          type: string
+        description: Filter by preferred industry
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Search by name, tagline, focus
+      - in: query
+        name: ticket_max
+        schema:
+          type: number
+          format: double
+        description: Maximum ticket size filter
+      - in: query
+        name: ticket_min
+        schema:
+          type: number
+          format: double
+        description: Minimum ticket size filter
+      tags:
+      - Profiles
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/auth/profiles/investor/{profile_id}/:
+    get:
+      operationId: auth_profiles_investor_retrieve_2
+      summary: Get a public investor profile by ID
+      parameters:
+      - in: path
+        name: profile_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Profiles
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
       responses:
         '200':
           description: No response body
@@ -299,6 +1058,637 @@ paths:
       responses:
         '200':
           description: No response body
+  /api/v1/billing/apply-coupon/:
+    post:
+      operationId: billing_apply_coupon_create
+      tags:
+      - billing
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/billing/cancel/:
+    post:
+      operationId: billing_cancel_create
+      tags:
+      - billing
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/billing/features/:
+    get:
+      operationId: billing_features_retrieve
+      tags:
+      - billing
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/billing/invoices/:
+    get:
+      operationId: billing_invoices_retrieve
+      tags:
+      - billing
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/billing/plans/:
+    get:
+      operationId: billing_plans_retrieve
+      tags:
+      - billing
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/billing/renew/:
+    post:
+      operationId: billing_renew_create
+      tags:
+      - billing
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/billing/subscribe/:
+    post:
+      operationId: billing_subscribe_create
+      tags:
+      - billing
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/billing/subscription/:
+    get:
+      operationId: billing_subscription_retrieve
+      tags:
+      - billing
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/billing/usage/:
+    get:
+      operationId: billing_usage_retrieve
+      tags:
+      - billing
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/chat/conversations/:
+    get:
+      operationId: chat_conversations_retrieve
+      description: List all conversations for the current user with unread counts
+      summary: List or create conversations
+      tags:
+      - Chat
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: chat_conversations_create
+      summary: Start a new conversation with a matched user
+      tags:
+      - Chat
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateConversationRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CreateConversationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateConversationRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/chat/conversations/{conversation_id}/:
+    get:
+      operationId: chat_conversations_retrieve_2
+      summary: Get conversation details
+      parameters:
+      - in: path
+        name: conversation_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Chat
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/chat/conversations/{conversation_id}/messages/:
+    get:
+      operationId: chat_conversations_messages_retrieve
+      description: Get paginated messages for a conversation (newest first)
+      summary: List or send messages in a conversation
+      parameters:
+      - in: query
+        name: before
+        schema:
+          type: string
+        description: ISO datetime cursor for pagination
+      - in: path
+        name: conversation_id
+        schema:
+          type: integer
+        required: true
+      - in: query
+        name: limit
+        schema:
+          type: integer
+        description: Max messages (default 50, max 100)
+      tags:
+      - Chat
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: chat_conversations_messages_create
+      summary: Send a message in a conversation
+      parameters:
+      - in: path
+        name: conversation_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Chat
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MessageCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MessageCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MessageCreateRequest'
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/chat/conversations/{conversation_id}/read/:
+    post:
+      operationId: chat_conversations_read_create
+      summary: Mark all messages as read in a conversation
+      parameters:
+      - in: path
+        name: conversation_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Chat
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/chat/unread-count/:
+    get:
+      operationId: chat_unread_count_retrieve
+      summary: Get total unread message count
+      tags:
+      - Chat
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/data-room/access-requests/:
+    get:
+      operationId: data_room_access_requests_retrieve
+      description: 'Founder side: approve or deny investors asking to see a room.'
+      tags:
+      - data-room
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/data-room/access-requests/{id}/approve/:
+    post:
+      operationId: data_room_access_requests_approve_create
+      description: 'Founder side: approve or deny investors asking to see a room.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - data-room
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/data-room/access-requests/{id}/deny/:
+    post:
+      operationId: data_room_access_requests_deny_create
+      description: 'Founder side: approve or deny investors asking to see a room.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - data-room
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/data-room/documents/:
+    get:
+      operationId: data_room_documents_retrieve
+      description: Startup-side document management within a data room.
+      tags:
+      - data-room
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/data-room/documents/{id}/:
+    get:
+      operationId: data_room_documents_retrieve_2
+      description: Startup-side document management within a data room.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - data-room
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    patch:
+      operationId: data_room_documents_partial_update
+      description: Startup-side document management within a data room.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - data-room
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    delete:
+      operationId: data_room_documents_destroy
+      description: Startup-side document management within a data room.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - data-room
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/data-room/documents/{id}/access_list/:
+    get:
+      operationId: data_room_documents_access_list_retrieve
+      description: Startup-side document management within a data room.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - data-room
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/data-room/documents/{id}/grant/:
+    post:
+      operationId: data_room_documents_grant_create
+      description: Startup-side document management within a data room.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - data-room
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/data-room/documents/{id}/revoke/:
+    post:
+      operationId: data_room_documents_revoke_create
+      description: Startup-side document management within a data room.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - data-room
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/data-room/documents/{id}/views/:
+    get:
+      operationId: data_room_documents_views_retrieve
+      description: Startup-side document management within a data room.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - data-room
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/data-room/investor/documents/:
+    get:
+      operationId: data_room_investor_documents_retrieve
+      description: Investor-side document browsing.
+      tags:
+      - data-room
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/data-room/investor/documents/{id}/:
+    get:
+      operationId: data_room_investor_documents_retrieve_2
+      description: Investor-side document browsing.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - data-room
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/data-room/investor/documents/{id}/view/:
+    post:
+      operationId: data_room_investor_documents_view_create
+      description: Investor-side document browsing.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - data-room
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/data-room/investor/documents/analytics/:
+    get:
+      operationId: data_room_investor_documents_analytics_retrieve
+      description: Investor-side document browsing.
+      tags:
+      - data-room
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/data-room/investor/rooms/:
+    get:
+      operationId: data_room_investor_rooms_retrieve
+      description: Rooms an investor can see exist, and request access to.
+      tags:
+      - data-room
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/data-room/investor/rooms/{id}/request_access/:
+    post:
+      operationId: data_room_investor_rooms_request_access_create
+      description: Rooms an investor can see exist, and request access to.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - data-room
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/data-room/rooms/:
+    get:
+      operationId: data_room_rooms_retrieve
+      description: Startup-side data room management.
+      tags:
+      - data-room
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: data_room_rooms_create
+      description: Startup-side data room management.
+      tags:
+      - data-room
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '201':
+          description: No response body
+  /api/v1/data-room/rooms/{id}/:
+    get:
+      operationId: data_room_rooms_retrieve_2
+      description: Startup-side data room management.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - data-room
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    patch:
+      operationId: data_room_rooms_partial_update
+      description: Startup-side data room management.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - data-room
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    delete:
+      operationId: data_room_rooms_destroy
+      description: Startup-side data room management.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - data-room
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/data-room/rooms/{id}/upload/:
+    post:
+      operationId: data_room_rooms_upload_create
+      description: Startup-side data room management.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - data-room
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/data-room/rooms/analytics/:
+    get:
+      operationId: data_room_rooms_analytics_retrieve
+      description: Startup-side data room management.
+      tags:
+      - data-room
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/data-room/rooms/full_analytics/:
+    get:
+      operationId: data_room_rooms_full_analytics_retrieve
+      description: Startup-side data room management.
+      tags:
+      - data-room
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
   /api/v1/health/:
     get:
       operationId: health_retrieve
@@ -313,6 +1703,512 @@ paths:
       responses:
         '200':
           description: No response body
+  /api/v1/investments/pipeline/investor/:
+    get:
+      operationId: investments_pipeline_investor_list
+      description: 'Investor-facing pipeline: manage deal flow from interest to investment.'
+      summary: List investor's pipeline
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: per_page
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - Investments - Investor
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedInvestmentOpportunityListList'
+          description: ''
+    post:
+      operationId: investments_pipeline_investor_create
+      description: 'Investor-facing pipeline: manage deal flow from interest to investment.'
+      summary: Create investment opportunity
+      tags:
+      - Investments - Investor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateInvestmentOpportunityRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CreateInvestmentOpportunityRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateInvestmentOpportunityRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateInvestmentOpportunity'
+          description: ''
+  /api/v1/investments/pipeline/investor/{id}/:
+    get:
+      operationId: investments_pipeline_investor_retrieve
+      description: 'Investor-facing pipeline: manage deal flow from interest to investment.'
+      summary: Get opportunity detail
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Investments - Investor
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvestmentOpportunityDetail'
+          description: ''
+  /api/v1/investments/pipeline/investor/{id}/mark_invested/:
+    post:
+      operationId: investments_pipeline_investor_mark_invested_create
+      description: 'Investor-facing pipeline: manage deal flow from interest to investment.'
+      summary: Mark deal as invested (closed)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - investments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MarkInvestedRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MarkInvestedRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MarkInvestedRequest'
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarkInvested'
+          description: ''
+  /api/v1/investments/pipeline/investor/{id}/move_stage/:
+    post:
+      operationId: investments_pipeline_investor_move_stage_create
+      description: 'Investor-facing pipeline: manage deal flow from interest to investment.'
+      summary: Move opportunity to a different stage
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - investments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateStageRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UpdateStageRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UpdateStageRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateStage'
+          description: ''
+  /api/v1/investments/pipeline/investor/{id}/reject/:
+    post:
+      operationId: investments_pipeline_investor_reject_create
+      description: 'Investor-facing pipeline: manage deal flow from interest to investment.'
+      summary: Reject this deal
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - investments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RejectDealRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RejectDealRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RejectDealRequest'
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RejectDeal'
+          description: ''
+  /api/v1/investments/pipeline/investor/{id}/schedule_meeting/:
+    post:
+      operationId: investments_pipeline_investor_schedule_meeting_create
+      description: 'Investor-facing pipeline: manage deal flow from interest to investment.'
+      summary: Schedule a meeting with the founder
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - investments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleMeetingRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ScheduleMeetingRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ScheduleMeetingRequest'
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScheduleMeeting'
+          description: ''
+  /api/v1/investments/pipeline/investor/{id}/send_term_sheet/:
+    post:
+      operationId: investments_pipeline_investor_send_term_sheet_create
+      description: 'Investor-facing pipeline: manage deal flow from interest to investment.'
+      summary: Send a term sheet
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - investments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendTermSheetRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SendTermSheetRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SendTermSheetRequest'
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendTermSheet'
+          description: ''
+  /api/v1/investments/pipeline/investor/{id}/withdraw/:
+    post:
+      operationId: investments_pipeline_investor_withdraw_create
+      description: 'Investor-facing pipeline: manage deal flow from interest to investment.'
+      summary: Withdraw from this deal
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - investments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WithdrawDealRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/WithdrawDealRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/WithdrawDealRequest'
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WithdrawDeal'
+          description: ''
+  /api/v1/investments/pipeline/investor/analytics/:
+    get:
+      operationId: investments_pipeline_investor_analytics_retrieve
+      description: 'Investor-facing pipeline: manage deal flow from interest to investment.'
+      summary: Get investor pipeline analytics
+      tags:
+      - investments
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvestorAnalytics'
+          description: ''
+  /api/v1/investments/pipeline/startup/:
+    get:
+      operationId: investments_pipeline_startup_list
+      description: 'Startup-facing pipeline: view incoming investor interest and manage
+        negotiations.'
+      summary: List incoming opportunities
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: per_page
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - Investments - Entrepreneur
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedInvestmentOpportunityListList'
+          description: ''
+  /api/v1/investments/pipeline/startup/{id}/:
+    get:
+      operationId: investments_pipeline_startup_retrieve
+      description: 'Startup-facing pipeline: view incoming investor interest and manage
+        negotiations.'
+      summary: Get opportunity detail
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Investments - Entrepreneur
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvestmentOpportunityDetail'
+          description: ''
+  /api/v1/investments/pipeline/startup/{id}/accept_term_sheet/:
+    post:
+      operationId: investments_pipeline_startup_accept_term_sheet_create
+      description: 'Startup-facing pipeline: view incoming investor interest and manage
+        negotiations.'
+      summary: Accept the term sheet so the investor can close
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - investments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvestmentOpportunityListRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/InvestmentOpportunityListRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/InvestmentOpportunityListRequest'
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvestmentOpportunityList'
+          description: ''
+  /api/v1/investments/pipeline/startup/{id}/move_stage/:
+    post:
+      operationId: investments_pipeline_startup_move_stage_create
+      description: 'Startup-facing pipeline: view incoming investor interest and manage
+        negotiations.'
+      summary: Update stage of an opportunity (entrepreneur-side)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - investments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateStageRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UpdateStageRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UpdateStageRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateStage'
+          description: ''
+  /api/v1/investments/pipeline/startup/{id}/reject/:
+    post:
+      operationId: investments_pipeline_startup_reject_create
+      description: 'Startup-facing pipeline: view incoming investor interest and manage
+        negotiations.'
+      summary: Reject an incoming offer
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - investments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RejectDealRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RejectDealRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RejectDealRequest'
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RejectDeal'
+          description: ''
+  /api/v1/investments/pipeline/startup/analytics/:
+    get:
+      operationId: investments_pipeline_startup_analytics_retrieve
+      description: 'Startup-facing pipeline: view incoming investor interest and manage
+        negotiations.'
+      summary: Get startup investment analytics
+      tags:
+      - investments
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StartupAnalytics'
+          description: ''
   /api/v1/matching/analytics/:
     get:
       operationId: matching_analytics_retrieve
@@ -325,12 +2221,275 @@ paths:
       responses:
         '200':
           description: No response body
+  /api/v1/matching/entrepreneur/matches/:
+    get:
+      operationId: matching_entrepreneur_matches_list
+      description: 'Entrepreneur-facing match endpoints: find investors, save, dismiss.'
+      summary: List recommended investors for the current entrepreneur
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: per_page
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - Matching - Entrepreneur
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedMatchScoreListList'
+          description: ''
+  /api/v1/matching/entrepreneur/matches/{id}/:
+    get:
+      operationId: matching_entrepreneur_matches_retrieve
+      description: 'Entrepreneur-facing match endpoints: find investors, save, dismiss.'
+      summary: Get details of a specific match
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Matching - Entrepreneur
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchScoreDetail'
+          description: ''
+  /api/v1/matching/entrepreneur/matches/{id}/dismiss/:
+    post:
+      operationId: matching_entrepreneur_matches_dismiss_create
+      description: 'Entrepreneur-facing match endpoints: find investors, save, dismiss.'
+      summary: Dismiss a match (remove from recommendations)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Matching - Entrepreneur
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchScoreList'
+          description: ''
+  /api/v1/matching/entrepreneur/matches/{id}/save/:
+    post:
+      operationId: matching_entrepreneur_matches_save_create
+      description: 'Entrepreneur-facing match endpoints: find investors, save, dismiss.'
+      summary: Save a match for later reference
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Matching - Entrepreneur
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchScoreList'
+          description: ''
+  /api/v1/matching/entrepreneur/matches/dismissed/:
+    get:
+      operationId: matching_entrepreneur_matches_dismissed_retrieve
+      description: 'Entrepreneur-facing match endpoints: find investors, save, dismiss.'
+      summary: List dismissed matches
+      tags:
+      - Matching - Entrepreneur
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchScoreList'
+          description: ''
+  /api/v1/matching/entrepreneur/matches/saved/:
+    get:
+      operationId: matching_entrepreneur_matches_saved_retrieve
+      description: 'Entrepreneur-facing match endpoints: find investors, save, dismiss.'
+      summary: List saved matches
+      tags:
+      - Matching - Entrepreneur
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchScoreList'
+          description: ''
   /api/v1/matching/history/:
     get:
       operationId: matching_history_retrieve
       summary: Get interaction history for the current user
       tags:
       - Matching
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/matching/insights/{id}/:
+    get:
+      operationId: matching_insights_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - matching
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/matching/insights/{id}/recommendations/:
+    get:
+      operationId: matching_insights_recommendations_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - matching
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/matching/insights/{id}/regenerate/:
+    post:
+      operationId: matching_insights_regenerate_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - matching
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/matching/insights/{id}/risks/:
+    get:
+      operationId: matching_insights_risks_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - matching
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/matching/insights/{id}/strengths/:
+    get:
+      operationId: matching_insights_strengths_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - matching
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/matching/insights/analytics/:
+    get:
+      operationId: matching_insights_analytics_retrieve
+      tags:
+      - matching
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/matching/insights/feedback/:
+    post:
+      operationId: matching_insights_feedback_create
+      tags:
+      - matching
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/matching/insights/patterns/:
+    get:
+      operationId: matching_insights_patterns_retrieve
+      tags:
+      - matching
       security:
       - jwtAuth: []
       - BearerAuth: []
@@ -349,28 +2508,155 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/v1/matching/matches/:
+  /api/v1/matching/investor/matches/:
     get:
-      operationId: matching_matches_retrieve
-      summary: Get match recommendations for the current investor
+      operationId: matching_investor_matches_list
+      description: 'Investor-facing match endpoints: view recommendations, save, dismiss.'
+      summary: List recommended startup matches for the current investor
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: per_page
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
       tags:
-      - Matching
+      - Matching - Investor
       security:
       - jwtAuth: []
       - BearerAuth: []
       responses:
         '200':
-          description: No response body
-  /api/v1/matching/matches/{startup_id}/:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedMatchScoreListList'
+          description: ''
+  /api/v1/matching/investor/matches/{id}/:
     get:
-      operationId: matching_detail_retrieve
-      summary: Get detailed match information for a specific startup
+      operationId: matching_investor_matches_retrieve
+      description: 'Investor-facing match endpoints: view recommendations, save, dismiss.'
+      summary: Get details of a specific match
       parameters:
       - in: path
-        name: startup_id
+        name: id
         schema:
-          type: integer
+          type: string
         required: true
+      tags:
+      - Matching - Investor
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchScoreDetail'
+          description: ''
+  /api/v1/matching/investor/matches/{id}/dismiss/:
+    post:
+      operationId: matching_investor_matches_dismiss_create
+      description: 'Investor-facing match endpoints: view recommendations, save, dismiss.'
+      summary: Dismiss a match (remove from recommendations)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Matching - Investor
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchScoreList'
+          description: ''
+  /api/v1/matching/investor/matches/{id}/save/:
+    post:
+      operationId: matching_investor_matches_save_create
+      description: 'Investor-facing match endpoints: view recommendations, save, dismiss.'
+      summary: Save a match for later reference
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Matching - Investor
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchScoreList'
+          description: ''
+  /api/v1/matching/investor/matches/dismissed/:
+    get:
+      operationId: matching_investor_matches_dismissed_retrieve
+      description: 'Investor-facing match endpoints: view recommendations, save, dismiss.'
+      summary: List dismissed matches for the current investor
+      tags:
+      - Matching - Investor
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchScoreList'
+          description: ''
+  /api/v1/matching/investor/matches/saved/:
+    get:
+      operationId: matching_investor_matches_saved_retrieve
+      description: 'Investor-facing match endpoints: view recommendations, save, dismiss.'
+      summary: List saved matches for the current investor
+      tags:
+      - Matching - Investor
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchScoreList'
+          description: ''
+  /api/v1/matching/matches/:
+    get:
+      operationId: matching_matches_retrieve
+      summary: Get match recommendations for the current investor (legacy)
       tags:
       - Matching
       security:
@@ -402,12 +2688,204 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/v1/matching/recommended/:
+  /api/v1/meetings/:
     get:
-      operationId: matching_recommended_retrieve
-      summary: Get recommended startups for the current investor (alias for my-matches)
+      operationId: meetings_retrieve
       tags:
-      - Matching
+      - meetings
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: meetings_create
+      tags:
+      - meetings
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '201':
+          description: No response body
+  /api/v1/meetings/{id}/:
+    get:
+      operationId: meetings_retrieve_2
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - meetings
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    patch:
+      operationId: meetings_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - meetings
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/meetings/{id}/cancel/:
+    post:
+      operationId: meetings_cancel_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - meetings
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/meetings/{id}/complete/:
+    post:
+      operationId: meetings_complete_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - meetings
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/meetings/{id}/confirm/:
+    post:
+      operationId: meetings_confirm_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - meetings
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/meetings/{id}/reschedule/:
+    post:
+      operationId: meetings_reschedule_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - meetings
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/meetings/{id}/timeline/:
+    get:
+      operationId: meetings_timeline_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - meetings
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/meetings/analytics/:
+    get:
+      operationId: meetings_analytics_retrieve
+      tags:
+      - meetings
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/meetings/availability/:
+    get:
+      operationId: meetings_availability_retrieve
+      tags:
+      - meetings
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: meetings_availability_create
+      tags:
+      - meetings
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '201':
+          description: No response body
+  /api/v1/meetings/calendar/:
+    get:
+      operationId: meetings_calendar_retrieve
+      tags:
+      - meetings
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/meetings/past/:
+    get:
+      operationId: meetings_past_retrieve
+      tags:
+      - meetings
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/meetings/upcoming/:
+    get:
+      operationId: meetings_upcoming_retrieve
+      tags:
+      - meetings
       security:
       - jwtAuth: []
       - BearerAuth: []
@@ -417,39 +2895,96 @@ paths:
   /api/v1/notifications/:
     get:
       operationId: notifications_retrieve
-      summary: List notifications for the current user
       tags:
-      - Notifications
+      - notifications
       security:
       - jwtAuth: []
       - BearerAuth: []
       responses:
         '200':
           description: No response body
-  /api/v1/notifications/{id}/read/:
-    patch:
-      operationId: notifications_read_partial_update
-      summary: Mark a notification as read
+  /api/v1/notifications/{id}/:
+    delete:
+      operationId: notifications_destroy
       parameters:
       - in: path
         name: id
         schema:
-          type: integer
+          type: string
         required: true
       tags:
-      - Notifications
+      - notifications
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/notifications/{id}/read/:
+    post:
+      operationId: notifications_read_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - notifications
       security:
       - jwtAuth: []
       - BearerAuth: []
       responses:
         '200':
           description: No response body
-  /api/v1/notifications/mark-all-read/:
-    post:
-      operationId: notifications_mark_all_read_create
-      summary: Mark all notifications as read
+  /api/v1/notifications/analytics/:
+    get:
+      operationId: notifications_analytics_retrieve
       tags:
-      - Notifications
+      - notifications
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/notifications/preferences/:
+    get:
+      operationId: notifications_preferences_retrieve
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    patch:
+      operationId: notifications_preferences_partial_update
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/notifications/read-all/:
+    post:
+      operationId: notifications_read_all_create
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/notifications/unread/:
+    get:
+      operationId: notifications_unread_retrieve
+      tags:
+      - notifications
       security:
       - jwtAuth: []
       - BearerAuth: []
@@ -459,18 +2994,401 @@ paths:
   /api/v1/notifications/unread-count/:
     get:
       operationId: notifications_unread_count_retrieve
-      summary: Get unread notification count
       tags:
-      - Notifications
+      - notifications
       security:
       - jwtAuth: []
       - BearerAuth: []
       responses:
         '200':
           description: No response body
-  /api/v1/startups/startups/:
+  /api/v1/onboarding/complete/:
+    post:
+      operationId: onboarding_complete_create
+      tags:
+      - onboarding
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/onboarding/data/founder/:
     get:
-      operationId: startups_startups_list
+      operationId: onboarding_data_founder_retrieve
+      tags:
+      - onboarding
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: onboarding_data_founder_create
+      tags:
+      - onboarding
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/onboarding/data/investor/:
+    get:
+      operationId: onboarding_data_investor_retrieve
+      tags:
+      - onboarding
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: onboarding_data_investor_create
+      tags:
+      - onboarding
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/onboarding/progress/:
+    get:
+      operationId: onboarding_progress_retrieve
+      tags:
+      - onboarding
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/onboarding/start/:
+    post:
+      operationId: onboarding_start_create
+      tags:
+      - onboarding
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/onboarding/step/:
+    post:
+      operationId: onboarding_step_create
+      tags:
+      - onboarding
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/ops/alerts/:
+    get:
+      operationId: ops_alerts_retrieve
+      tags:
+      - ops
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/ops/errors/:
+    get:
+      operationId: ops_errors_retrieve
+      tags:
+      - ops
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/ops/health/:
+    get:
+      operationId: ops_health_retrieve
+      tags:
+      - ops
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/ops/jobs/:
+    get:
+      operationId: ops_jobs_retrieve
+      tags:
+      - ops
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/ops/metrics/:
+    get:
+      operationId: ops_metrics_retrieve
+      tags:
+      - ops
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/search/{id}/saved/:
+    delete:
+      operationId: search_saved_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - search
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/search/analytics/:
+    get:
+      operationId: search_analytics_retrieve
+      tags:
+      - search
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/search/autocomplete/:
+    get:
+      operationId: search_autocomplete_retrieve
+      tags:
+      - search
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/search/founders/:
+    get:
+      operationId: search_founders_retrieve
+      tags:
+      - search
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/search/history/:
+    get:
+      operationId: search_history_retrieve
+      tags:
+      - search
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/search/investors/:
+    get:
+      operationId: search_investors_retrieve
+      tags:
+      - search
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/search/opportunities/:
+    get:
+      operationId: search_opportunities_retrieve
+      tags:
+      - search
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/search/recommended/:
+    get:
+      operationId: search_recommended_retrieve
+      tags:
+      - search
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/search/save/:
+    post:
+      operationId: search_save_create
+      tags:
+      - search
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/search/saved/:
+    get:
+      operationId: search_saved_retrieve
+      tags:
+      - search
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/search/startups/:
+    get:
+      operationId: search_startups_retrieve
+      tags:
+      - search
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/settings/features/:
+    get:
+      operationId: settings_features_retrieve
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: settings_features_create
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/settings/features/{key}/toggle/:
+    post:
+      operationId: settings_features_toggle_create
+      parameters:
+      - in: path
+        name: key
+        schema:
+          type: string
+        required: true
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/settings/features/access/:
+    get:
+      operationId: settings_features_access_retrieve
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/settings/maintenance/:
+    get:
+      operationId: settings_maintenance_retrieve
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    patch:
+      operationId: settings_maintenance_partial_update
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/settings/settings/{key}/:
+    get:
+      operationId: settings_settings_retrieve
+      parameters:
+      - in: path
+        name: key
+        schema:
+          type: string
+        required: true
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+    patch:
+      operationId: settings_settings_partial_update
+      parameters:
+      - in: path
+        name: key
+        schema:
+          type: string
+        required: true
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/settings/settings/public/:
+    get:
+      operationId: settings_settings_public_retrieve
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/startups/:
+    get:
+      operationId: startups_list
       summary: List startups with filtering and search
       parameters:
       - in: query
@@ -597,7 +3515,7 @@ paths:
                 $ref: '#/components/schemas/PaginatedStartupListList'
           description: ''
     post:
-      operationId: startups_startups_create
+      operationId: startups_create
       summary: Create a new startup
       tags:
       - Startups
@@ -623,9 +3541,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/StartupCreate'
           description: ''
-  /api/v1/startups/startups/{id}/:
+  /api/v1/startups/{id}/:
     get:
-      operationId: startups_startups_retrieve
+      operationId: startups_retrieve
       summary: Get startup details
       parameters:
       - in: path
@@ -648,7 +3566,7 @@ paths:
                 $ref: '#/components/schemas/StartupDetail'
           description: ''
     put:
-      operationId: startups_startups_update
+      operationId: startups_update
       summary: Full update a startup
       parameters:
       - in: path
@@ -682,7 +3600,7 @@ paths:
                 $ref: '#/components/schemas/StartupCreate'
           description: ''
     patch:
-      operationId: startups_startups_partial_update
+      operationId: startups_partial_update
       summary: Partial update a startup
       parameters:
       - in: path
@@ -715,7 +3633,7 @@ paths:
                 $ref: '#/components/schemas/StartupCreate'
           description: ''
     delete:
-      operationId: startups_startups_destroy
+      operationId: startups_destroy
       summary: Delete a startup
       parameters:
       - in: path
@@ -732,9 +3650,44 @@ paths:
       responses:
         '204':
           description: No response body
-  /api/v1/startups/startups/{id}/bookmark/:
+  /api/v1/startups/{id}/archive/:
     post:
-      operationId: startups_startups_bookmark_create
+      operationId: startups_archive_create
+      summary: Archive startup
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Startup.
+        required: true
+      tags:
+      - Startups
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartupDetailRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StartupDetailRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StartupDetailRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StartupDetail'
+          description: ''
+  /api/v1/startups/{id}/bookmark/:
+    post:
+      operationId: startups_bookmark_create
       summary: Bookmark or unbookmark a startup
       parameters:
       - in: path
@@ -760,7 +3713,6 @@ paths:
       security:
       - jwtAuth: []
       - BearerAuth: []
-      - {}
       responses:
         '200':
           content:
@@ -769,7 +3721,7 @@ paths:
                 $ref: '#/components/schemas/StartupDetail'
           description: ''
     delete:
-      operationId: startups_startups_bookmark_destroy
+      operationId: startups_bookmark_destroy
       summary: Bookmark or unbookmark a startup
       parameters:
       - in: path
@@ -783,13 +3735,12 @@ paths:
       security:
       - jwtAuth: []
       - BearerAuth: []
-      - {}
       responses:
         '204':
           description: No response body
-  /api/v1/startups/startups/{id}/documents/:
+  /api/v1/startups/{id}/documents/:
     get:
-      operationId: startups_startups_documents_retrieve
+      operationId: startups_documents_retrieve
       summary: List documents for this startup
       parameters:
       - in: path
@@ -803,7 +3754,6 @@ paths:
       security:
       - jwtAuth: []
       - BearerAuth: []
-      - {}
       responses:
         '200':
           content:
@@ -811,9 +3761,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/StartupDetail'
           description: ''
-  /api/v1/startups/startups/{id}/documents/{doc_id}/:
+  /api/v1/startups/{id}/documents/{doc_id}/:
     delete:
-      operationId: startups_startups_documents_destroy
+      operationId: startups_documents_destroy
       summary: Delete a document from this startup
       parameters:
       - in: path
@@ -832,14 +3782,13 @@ paths:
       security:
       - jwtAuth: []
       - BearerAuth: []
-      - {}
       responses:
         '204':
           description: No response body
-  /api/v1/startups/startups/{id}/recommended_investors/:
+  /api/v1/startups/{id}/funding_progress/:
     get:
-      operationId: startups_startups_recommended_investors_retrieve
-      summary: List recommended investors for this startup
+      operationId: startups_funding_progress_retrieve
+      summary: Dummy funding raised so far against the goal
       parameters:
       - in: path
         name: id
@@ -852,7 +3801,6 @@ paths:
       security:
       - jwtAuth: []
       - BearerAuth: []
-      - {}
       responses:
         '200':
           content:
@@ -860,10 +3808,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/StartupDetail'
           description: ''
-  /api/v1/startups/startups/{id}/submit/:
+  /api/v1/startups/{id}/publish/:
     post:
-      operationId: startups_startups_submit_create
-      summary: Submit startup for review (change status to active)
+      operationId: startups_publish_create
+      summary: Publish startup (change status from draft to active)
       parameters:
       - in: path
         name: id
@@ -888,7 +3836,6 @@ paths:
       security:
       - jwtAuth: []
       - BearerAuth: []
-      - {}
       responses:
         '200':
           content:
@@ -896,10 +3843,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/StartupDetail'
           description: ''
-  /api/v1/startups/startups/{id}/upload_document/:
-    post:
-      operationId: startups_startups_upload_document_create
-      summary: Upload a document for this startup
+  /api/v1/startups/{id}/recommended_investors/:
+    get:
+      operationId: startups_recommended_investors_retrieve
+      summary: List recommended investors for this startup
       parameters:
       - in: path
         name: id
@@ -912,7 +3859,6 @@ paths:
       security:
       - jwtAuth: []
       - BearerAuth: []
-      - {}
       responses:
         '200':
           content:
@@ -920,9 +3866,41 @@ paths:
               schema:
                 $ref: '#/components/schemas/StartupDetail'
           description: ''
-  /api/v1/startups/startups/{id}/verify/:
+  /api/v1/startups/{id}/upload_document/:
     post:
-      operationId: startups_startups_verify_create
+      operationId: startups_upload_document_create
+      summary: Upload a document for this startup
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Startup.
+        required: true
+      tags:
+      - Startups
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StartupDetailRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StartupDetailRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StartupDetail'
+          description: ''
+  /api/v1/startups/{id}/verify/:
+    post:
+      operationId: startups_verify_create
       summary: Verify a startup (admin)
       parameters:
       - in: path
@@ -955,9 +3933,25 @@ paths:
               schema:
                 $ref: '#/components/schemas/StartupDetail'
           description: ''
-  /api/v1/startups/startups/statistics/:
+  /api/v1/startups/my_startups/:
     get:
-      operationId: startups_startups_statistics_retrieve
+      operationId: startups_my_startups_retrieve
+      summary: List current user's startups
+      tags:
+      - Startups
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StartupDetail'
+          description: ''
+  /api/v1/startups/statistics/:
+    get:
+      operationId: startups_statistics_retrieve
       summary: Get startup statistics (admin)
       tags:
       - Startups
@@ -971,6 +3965,66 @@ paths:
               schema:
                 $ref: '#/components/schemas/StartupDetail'
           description: ''
+  /health/:
+    get:
+      operationId: health_retrieve_2
+      tags:
+      - health
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /health/celery/:
+    get:
+      operationId: health_celery_retrieve
+      tags:
+      - health
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /health/db/:
+    get:
+      operationId: health_db_retrieve
+      tags:
+      - health
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /health/redis/:
+    get:
+      operationId: health_redis_retrieve
+      tags:
+      - health
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /health/storage/:
+    get:
+      operationId: health_storage_retrieve
+      tags:
+      - health
+      security:
+      - jwtAuth: []
+      - BearerAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
 components:
   schemas:
     BlankEnum:
@@ -998,6 +4052,63 @@ components:
         * `advertising` - Advertising
         * `hardware` - Hardware
         * `other` - Other
+    CreateConversationRequest:
+      type: object
+      properties:
+        participant_id:
+          type: integer
+      required:
+      - participant_id
+    CreateInvestmentOpportunity:
+      type: object
+      properties:
+        startup_id:
+          type: integer
+        amount_requested:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        equity_requested:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        valuation:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        notes:
+          type: string
+          default: ''
+      required:
+      - startup_id
+    CreateInvestmentOpportunityRequest:
+      type: object
+      properties:
+        startup_id:
+          type: integer
+        amount_requested:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        equity_requested:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        valuation:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        notes:
+          type: string
+          default: ''
+      required:
+      - startup_id
     DocumentTypeEnum:
       enum:
       - pitch_deck
@@ -1072,6 +4183,620 @@ components:
         * `iot` - IoT / Hardware
         * `media` - Media / Entertainment
         * `other` - Other
+    InvestmentActivity:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        actor:
+          type: string
+          readOnly: true
+        action:
+          type: string
+          maxLength: 50
+        metadata: {}
+        timestamp:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - action
+      - actor
+      - id
+      - timestamp
+    InvestmentOpportunityDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        startup:
+          type: string
+          readOnly: true
+        investor:
+          type: string
+          readOnly: true
+        amount_requested:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        amount_offered:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        equity_requested:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        equity_offered:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        valuation:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        proposed_valuation:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        status:
+          $ref: '#/components/schemas/Status470Enum'
+        notes:
+          type: string
+        term_sheet_url:
+          type: string
+          format: uri
+          maxLength: 200
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        activities:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvestmentActivity'
+          readOnly: true
+        recent_activities:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvestmentActivity'
+          readOnly: true
+        founder_accepted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - activities
+      - created_at
+      - founder_accepted_at
+      - id
+      - investor
+      - recent_activities
+      - startup
+      - updated_at
+    InvestmentOpportunityList:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        startup:
+          type: string
+          readOnly: true
+        investor:
+          type: string
+          readOnly: true
+        amount_requested:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        amount_offered:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        equity_requested:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        equity_offered:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        valuation:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        proposed_valuation:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        status:
+          $ref: '#/components/schemas/Status470Enum'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - investor
+      - startup
+      - updated_at
+    InvestmentOpportunityListRequest:
+      type: object
+      properties:
+        amount_requested:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        amount_offered:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        equity_requested:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        equity_offered:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        valuation:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        proposed_valuation:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        status:
+          $ref: '#/components/schemas/Status470Enum'
+    InvestorAnalytics:
+      type: object
+      properties:
+        total_deals:
+          type: integer
+        active_deals:
+          type: integer
+        invested_deals:
+          type: integer
+        rejected_deals:
+          type: integer
+        withdrawn_deals:
+          type: integer
+        avg_ticket_size:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        total_invested:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        conversion_rate:
+          type: number
+          format: double
+        by_stage:
+          type: object
+          additionalProperties:
+            type: integer
+      required:
+      - active_deals
+      - avg_ticket_size
+      - by_stage
+      - conversion_rate
+      - invested_deals
+      - rejected_deals
+      - total_deals
+      - total_invested
+      - withdrawn_deals
+    MarkInvested:
+      type: object
+      properties:
+        amount_offered:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        equity_offered:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        valuation:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+    MarkInvestedRequest:
+      type: object
+      properties:
+        amount_offered:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        equity_offered:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        valuation:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+    MatchScoreDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        investor_id:
+          type: integer
+          readOnly: true
+        startup_id:
+          type: integer
+          readOnly: true
+        startup_name:
+          type: string
+          readOnly: true
+        startup_slug:
+          type: string
+          readOnly: true
+        startup_logo:
+          type: string
+          format: uri
+          readOnly: true
+        startup_industry:
+          type: string
+          readOnly: true
+        startup_stage:
+          type: string
+          readOnly: true
+        startup_location:
+          type: string
+          readOnly: true
+        startup_tagline:
+          type: string
+          readOnly: true
+        startup_funding_goal:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          readOnly: true
+        startup_owner_name:
+          type: string
+          readOnly: true
+        startup_owner_id:
+          type: integer
+          readOnly: true
+        investor_name:
+          type: string
+          readOnly: true
+        investor_type:
+          type: string
+          readOnly: true
+        score:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          readOnly: true
+        score_breakdown:
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusB4dEnum'
+          readOnly: true
+        is_viewed:
+          type: boolean
+          readOnly: true
+        viewed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        is_bookmarked:
+          type: boolean
+          readOnly: true
+        bookmarked_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        is_contacted:
+          type: boolean
+          readOnly: true
+        contacted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        is_ignored:
+          type: boolean
+          readOnly: true
+        ignored_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        startup_detail:
+          type: string
+          readOnly: true
+        investor_detail:
+          type: string
+          readOnly: true
+      required:
+      - bookmarked_at
+      - contacted_at
+      - created_at
+      - id
+      - ignored_at
+      - investor_detail
+      - investor_id
+      - investor_name
+      - investor_type
+      - is_bookmarked
+      - is_contacted
+      - is_ignored
+      - is_viewed
+      - score
+      - score_breakdown
+      - startup_detail
+      - startup_funding_goal
+      - startup_id
+      - startup_industry
+      - startup_location
+      - startup_logo
+      - startup_name
+      - startup_owner_id
+      - startup_owner_name
+      - startup_slug
+      - startup_stage
+      - startup_tagline
+      - status
+      - updated_at
+      - viewed_at
+    MatchScoreList:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        investor_id:
+          type: integer
+          readOnly: true
+        startup_id:
+          type: integer
+          readOnly: true
+        startup_name:
+          type: string
+          readOnly: true
+        startup_slug:
+          type: string
+          readOnly: true
+        startup_logo:
+          type: string
+          format: uri
+          readOnly: true
+        startup_industry:
+          type: string
+          readOnly: true
+        startup_stage:
+          type: string
+          readOnly: true
+        startup_location:
+          type: string
+          readOnly: true
+        startup_tagline:
+          type: string
+          readOnly: true
+        startup_funding_goal:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          readOnly: true
+        startup_owner_name:
+          type: string
+          readOnly: true
+        startup_owner_id:
+          type: integer
+          readOnly: true
+        investor_name:
+          type: string
+          readOnly: true
+        investor_type:
+          type: string
+          readOnly: true
+        score:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          readOnly: true
+        score_breakdown:
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusB4dEnum'
+          readOnly: true
+        is_viewed:
+          type: boolean
+          readOnly: true
+        viewed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        is_bookmarked:
+          type: boolean
+          readOnly: true
+        bookmarked_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        is_contacted:
+          type: boolean
+          readOnly: true
+        contacted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        is_ignored:
+          type: boolean
+          readOnly: true
+        ignored_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - bookmarked_at
+      - contacted_at
+      - created_at
+      - id
+      - ignored_at
+      - investor_id
+      - investor_name
+      - investor_type
+      - is_bookmarked
+      - is_contacted
+      - is_ignored
+      - is_viewed
+      - score
+      - score_breakdown
+      - startup_funding_goal
+      - startup_id
+      - startup_industry
+      - startup_location
+      - startup_logo
+      - startup_name
+      - startup_owner_id
+      - startup_owner_name
+      - startup_slug
+      - startup_stage
+      - startup_tagline
+      - status
+      - updated_at
+      - viewed_at
+    MessageCreateRequest:
+      type: object
+      properties:
+        message_type:
+          allOf:
+          - $ref: '#/components/schemas/MessageTypeEnum'
+          default: text
+        content:
+          type: string
+          default: ''
+        attachment:
+          type: string
+          format: binary
+          nullable: true
+        metadata: {}
+    MessageTypeEnum:
+      enum:
+      - text
+      - file
+      - image
+      type: string
+      description: |-
+        * `text` - text
+        * `file` - file
+        * `image` - image
+    PaginatedInvestmentOpportunityListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvestmentOpportunityList'
+    PaginatedMatchScoreListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/MatchScoreList'
     PaginatedStartupListList:
       type: object
       required:
@@ -1138,7 +4863,12 @@ components:
         tagline:
           type: string
           maxLength: 500
+        short_description:
+          type: string
+          maxLength: 500
         description:
+          type: string
+        detailed_pitch:
           type: string
         industry:
           $ref: '#/components/schemas/IndustryEnum'
@@ -1188,10 +4918,13 @@ components:
           type: string
           format: binary
           nullable: true
+          pattern: (?:jpg|jpeg|png|gif|webp|svg)$
         pitch_deck:
           type: string
           format: binary
           nullable: true
+          pattern: (?:pdf|doc|docx|xls|xlsx|ppt|pptx|txt|csv|md)$
+        gallery_images: {}
         founded_date:
           type: string
           format: date
@@ -1203,6 +4936,8 @@ components:
           nullable: true
         is_visible:
           type: boolean
+        status:
+          $ref: '#/components/schemas/Status70eEnum'
         team_members:
           type: array
           items:
@@ -1310,6 +5045,16 @@ components:
       - confirm_password
       - email
       - password
+    RejectDeal:
+      type: object
+      properties:
+        reason:
+          type: string
+    RejectDealRequest:
+      type: object
+      properties:
+        reason:
+          type: string
     RoleEnum:
       enum:
       - entrepreneur
@@ -1324,6 +5069,70 @@ components:
         * `mentor` - Mentor
         * `talent` - Talent
         * `admin` - Admin
+    ScheduleMeeting:
+      type: object
+      properties:
+        meeting_url:
+          type: string
+          format: uri
+        meeting_time:
+          type: string
+          format: date-time
+        notes:
+          type: string
+    ScheduleMeetingRequest:
+      type: object
+      properties:
+        meeting_url:
+          type: string
+          format: uri
+        meeting_time:
+          type: string
+          format: date-time
+        notes:
+          type: string
+    SendTermSheet:
+      type: object
+      properties:
+        amount_offered:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        equity_offered:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        valuation:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        term_sheet_url:
+          type: string
+          format: uri
+    SendTermSheetRequest:
+      type: object
+      properties:
+        amount_offered:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        equity_offered:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        valuation:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        term_sheet_url:
+          type: string
+          format: uri
     StageEnum:
       enum:
       - idea
@@ -1342,16 +5151,57 @@ components:
         * `series_b` - Series B
         * `series_c` - Series C+
         * `growth` - Growth Stage
+    StartupAnalytics:
+      type: object
+      properties:
+        interested_investors:
+          type: integer
+        active_negotiations:
+          type: integer
+        invested_deals:
+          type: integer
+        funds_raised:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        pipeline_value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          nullable: true
+        total_offers:
+          type: integer
+        by_stage:
+          type: object
+          additionalProperties:
+            type: integer
+      required:
+      - active_negotiations
+      - by_stage
+      - funds_raised
+      - interested_investors
+      - invested_deals
+      - pipeline_value
+      - total_offers
     StartupCreate:
       type: object
       properties:
+        id:
+          type: integer
+          readOnly: true
         name:
           type: string
           maxLength: 255
         tagline:
           type: string
           maxLength: 500
+        short_description:
+          type: string
+          maxLength: 500
         description:
+          type: string
+        detailed_pitch:
           type: string
         industry:
           $ref: '#/components/schemas/IndustryEnum'
@@ -1400,10 +5250,13 @@ components:
           type: string
           format: uri
           nullable: true
+          pattern: (?:jpg|jpeg|png|gif|webp|svg)$
         pitch_deck:
           type: string
           format: uri
           nullable: true
+          pattern: (?:pdf|doc|docx|xls|xlsx|ppt|pptx|txt|csv|md)$
+        gallery_images: {}
         founded_date:
           type: string
           format: date
@@ -1415,6 +5268,8 @@ components:
           nullable: true
         is_visible:
           type: boolean
+        status:
+          $ref: '#/components/schemas/Status70eEnum'
         team_members:
           type: array
           items:
@@ -1426,6 +5281,7 @@ components:
         metrics:
           $ref: '#/components/schemas/StartupMetric'
       required:
+      - id
       - industry
       - name
       - stage
@@ -1439,7 +5295,12 @@ components:
         tagline:
           type: string
           maxLength: 500
+        short_description:
+          type: string
+          maxLength: 500
         description:
+          type: string
+        detailed_pitch:
           type: string
         industry:
           $ref: '#/components/schemas/IndustryEnum'
@@ -1489,10 +5350,13 @@ components:
           type: string
           format: binary
           nullable: true
+          pattern: (?:jpg|jpeg|png|gif|webp|svg)$
         pitch_deck:
           type: string
           format: binary
           nullable: true
+          pattern: (?:pdf|doc|docx|xls|xlsx|ppt|pptx|txt|csv|md)$
+        gallery_images: {}
         founded_date:
           type: string
           format: date
@@ -1504,6 +5368,8 @@ components:
           nullable: true
         is_visible:
           type: boolean
+        status:
+          $ref: '#/components/schemas/Status70eEnum'
         team_members:
           type: array
           items:
@@ -1527,10 +5393,19 @@ components:
         name:
           type: string
           maxLength: 255
+        slug:
+          type: string
+          readOnly: true
+          pattern: ^[-a-zA-Z0-9_]+$
         tagline:
           type: string
           maxLength: 500
+        short_description:
+          type: string
+          maxLength: 500
         description:
+          type: string
+        detailed_pitch:
           type: string
         industry:
           $ref: '#/components/schemas/IndustryEnum'
@@ -1579,10 +5454,13 @@ components:
           type: string
           format: uri
           nullable: true
+          pattern: (?:jpg|jpeg|png|gif|webp|svg)$
         pitch_deck:
           type: string
           format: uri
           nullable: true
+          pattern: (?:pdf|doc|docx|xls|xlsx|ppt|pptx|txt|csv|md)$
+        gallery_images: {}
         founded_date:
           type: string
           format: date
@@ -1598,7 +5476,7 @@ components:
         is_visible:
           type: boolean
         status:
-          $ref: '#/components/schemas/StatusEnum'
+          $ref: '#/components/schemas/Status70eEnum'
         view_count:
           type: integer
           readOnly: true
@@ -1651,6 +5529,7 @@ components:
       - metrics
       - name
       - owner_name
+      - slug
       - social_links
       - stage
       - team_members
@@ -1666,7 +5545,12 @@ components:
         tagline:
           type: string
           maxLength: 500
+        short_description:
+          type: string
+          maxLength: 500
         description:
+          type: string
+        detailed_pitch:
           type: string
         industry:
           $ref: '#/components/schemas/IndustryEnum'
@@ -1716,10 +5600,13 @@ components:
           type: string
           format: binary
           nullable: true
+          pattern: (?:jpg|jpeg|png|gif|webp|svg)$
         pitch_deck:
           type: string
           format: binary
           nullable: true
+          pattern: (?:pdf|doc|docx|xls|xlsx|ppt|pptx|txt|csv|md)$
+        gallery_images: {}
         founded_date:
           type: string
           format: date
@@ -1732,7 +5619,7 @@ components:
         is_visible:
           type: boolean
         status:
-          $ref: '#/components/schemas/StatusEnum'
+          $ref: '#/components/schemas/Status70eEnum'
       required:
       - industry
       - name
@@ -1749,6 +5636,7 @@ components:
         file:
           type: string
           format: uri
+          pattern: (?:pdf|doc|docx|xls|xlsx|ppt|pptx|txt|csv|md|jpg|jpeg|png)$
         document_type:
           $ref: '#/components/schemas/DocumentTypeEnum'
         uploaded_at:
@@ -1770,6 +5658,7 @@ components:
         file:
           type: string
           format: binary
+          pattern: (?:pdf|doc|docx|xls|xlsx|ppt|pptx|txt|csv|md|jpg|jpeg|png)$
         document_type:
           $ref: '#/components/schemas/DocumentTypeEnum'
       required:
@@ -1841,6 +5730,10 @@ components:
         name:
           type: string
           maxLength: 255
+        slug:
+          type: string
+          maxLength: 280
+          pattern: ^[-a-zA-Z0-9_]+$
         tagline:
           type: string
           maxLength: 500
@@ -1865,6 +5758,7 @@ components:
           type: string
           format: uri
           nullable: true
+          pattern: (?:jpg|jpeg|png|gif|webp|svg)$
         team_size:
           type: integer
           maximum: 2147483647
@@ -1873,7 +5767,7 @@ components:
         is_verified:
           type: boolean
         status:
-          $ref: '#/components/schemas/StatusEnum'
+          $ref: '#/components/schemas/Status70eEnum'
         view_count:
           type: integer
           maximum: 2147483647
@@ -2047,6 +5941,7 @@ components:
           type: string
           format: uri
           nullable: true
+          pattern: (?:jpg|jpeg|png|gif|webp|svg)$
         bio:
           type: string
         is_founder:
@@ -2082,6 +5977,7 @@ components:
           type: string
           format: binary
           nullable: true
+          pattern: (?:jpg|jpeg|png|gif|webp|svg)$
         bio:
           type: string
         is_founder:
@@ -2093,7 +5989,27 @@ components:
       required:
       - name
       - role
-    StatusEnum:
+    Status470Enum:
+      enum:
+      - interested
+      - meeting_scheduled
+      - due_diligence
+      - negotiating
+      - term_sheet_sent
+      - invested
+      - rejected
+      - withdrawn
+      type: string
+      description: |-
+        * `interested` - Interested
+        * `meeting_scheduled` - Meeting Scheduled
+        * `due_diligence` - Due Diligence
+        * `negotiating` - Negotiating
+        * `term_sheet_sent` - Term Sheet Sent
+        * `invested` - Invested
+        * `rejected` - Rejected
+        * `withdrawn` - Withdrawn
+    Status70eEnum:
       enum:
       - draft
       - active
@@ -2104,6 +6020,22 @@ components:
         * `draft` - Draft
         * `active` - Active
         * `funded` - Funded
+        * `closed` - Closed
+    StatusB4dEnum:
+      enum:
+      - pending
+      - recommended
+      - saved
+      - contacted
+      - dismissed
+      - closed
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `recommended` - Recommended
+        * `saved` - Saved
+        * `contacted` - Contacted
+        * `dismissed` - Dismissed
         * `closed` - Closed
     TokenObtainRequest:
       type: object
@@ -2145,6 +6077,54 @@ components:
           minLength: 1
       required:
       - refresh
+    UpdateStage:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/UpdateStageStatusEnum'
+        notes:
+          type: string
+      required:
+      - status
+    UpdateStageRequest:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/UpdateStageStatusEnum'
+        notes:
+          type: string
+      required:
+      - status
+    UpdateStageStatusEnum:
+      enum:
+      - interested
+      - meeting_scheduled
+      - due_diligence
+      - negotiating
+      - term_sheet_sent
+      - invested
+      - rejected
+      - withdrawn
+      type: string
+      description: |-
+        * `interested` - interested
+        * `meeting_scheduled` - meeting_scheduled
+        * `due_diligence` - due_diligence
+        * `negotiating` - negotiating
+        * `term_sheet_sent` - term_sheet_sent
+        * `invested` - invested
+        * `rejected` - rejected
+        * `withdrawn` - withdrawn
+    WithdrawDeal:
+      type: object
+      properties:
+        reason:
+          type: string
+    WithdrawDealRequest:
+      type: object
+      properties:
+        reason:
+          type: string
   securitySchemes:
     jwtAuth:
       type: http

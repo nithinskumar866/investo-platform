@@ -307,7 +307,11 @@ class TestAnalyticsViews:
             resp = investor_client.get("/api/v1/analytics/investor/funnel/")
         assert resp.status_code == 200
 
-    def test_reports(self, authenticated_client):
+    def test_reports_is_admin_only(self, authenticated_client):
+        resp = authenticated_client.get("/api/v1/analytics/reports/")
+        assert resp.status_code == 403
+
+    def test_reports(self, admin_client):
         with patch.multiple(
             "apps.analytics.repositories.AnalyticsRepository",
             platform_overview=Mock(return_value={"users": 100}),
@@ -315,7 +319,7 @@ class TestAnalyticsViews:
             platform_top_startups=Mock(return_value=[]),
             platform_top_investors=Mock(return_value=[]),
         ):
-            resp = authenticated_client.get("/api/v1/analytics/reports/")
+            resp = admin_client.get("/api/v1/analytics/reports/")
         assert resp.status_code == 200
 
     def test_analytics_requires_auth(self, api_client):

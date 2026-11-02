@@ -1,4 +1,5 @@
-import random
+import hmac
+import secrets
 import hashlib
 import logging
 
@@ -11,7 +12,11 @@ from apps.common.email_service import EmailService
 from .repositories import EntrepreneurProfileRepository, InvestorProfileRepository
 
 User = get_user_model()
+from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
+
 logger = logging.getLogger(__name__)
+
+OTP_MAX_ATTEMPTS = 5
 
 
 def create_tokens_for_user(user):
@@ -67,12 +72,28 @@ class AuthService:
     @staticmethod
     def _generate_otp() -> str:
         """Generate a 6-digit OTP."""
-        return f"{random.randint(100000, 999999)}"
+        return f"{secrets.randbelow(900000) + 100000}"
 
     @staticmethod
     def _hash_otp(otp: str) -> str:
         """Hash OTP before storing. Never store plaintext OTPs."""
         return hashlib.sha256(otp.encode()).hexdigest()
+
+    @staticmethod
+    def _check_otp(cache_key: str, otp: str) -> bool:
+        """Compare an OTP in constant time; burn it after too many wrong guesses."""
+        stored_hash = cache.get(cache_key)
+        if not stored_hash:
+            return False
+        attempts_key = f"{cache_key}:attempts"
+        if hmac.compare_digest(stored_hash, AuthService._hash_otp(otp)):
+            cache.delete(attempts_key)
+            return True
+        cache.add(attempts_key, 0, timeout=600)
+        if cache.incr(attempts_key) >= OTP_MAX_ATTEMPTS:
+            cache.delete(cache_key)
+            cache.delete(attempts_key)
+        return False
 
     @staticmethod
     def send_verification_email(user) -> str:
@@ -83,7 +104,7 @@ class AuthService:
         """
         otp = AuthService._generate_otp()
         otp_hash = AuthService._hash_otp(otp)
-        cache_key = f"otp:verify:{user.email}"
+        cache_key = f"otp:verify:{user.email.lower()}"
 
         cache.set(cache_key, otp_hash, timeout=600)
 
@@ -116,14 +137,8 @@ class AuthService:
         - Fast: sub-millisecond lookup vs DB query
         """
         cache_key = f"otp:verify:{email.lower().strip()}"
-        stored_hash = cache.get(cache_key)
-
-        if not stored_hash:
-            logger.warning(f"Verification attempt with expired or missing OTP for {email}")
-            return False
-
-        if stored_hash != AuthService._hash_otp(otp):
-            logger.warning(f"Invalid OTP attempt for {email}")
+        if not AuthService._check_otp(cache_key, otp):
+            logger.warning(f"Invalid or expired verification OTP for {email}")
             return False
 
         user = User.objects.filter(email=email.lower().strip()).first()
@@ -147,7 +162,7 @@ class AuthService:
 
         otp = AuthService._generate_otp()
         otp_hash = AuthService._hash_otp(otp)
-        cache_key = f"otp:reset:{user.email}"
+        cache_key = f"otp:reset:{user.email.lower()}"
         cache.set(cache_key, otp_hash, timeout=600)
 
         EmailService.send_password_reset(
@@ -161,9 +176,7 @@ class AuthService:
     def reset_password(email: str, otp: str, new_password: str) -> bool:
         """Verify OTP and reset password."""
         cache_key = f"otp:reset:{email.lower().strip()}"
-        stored_hash = cache.get(cache_key)
-
-        if not stored_hash or stored_hash != AuthService._hash_otp(otp):
+        if not AuthService._check_otp(cache_key, otp):
             logger.warning(f"Invalid or expired password reset OTP for {email}")
             return False
 
@@ -174,6 +187,8 @@ class AuthService:
         user.set_password(new_password)
         user.save(update_fields=["password"])
         cache.delete(cache_key)
+        for token in OutstandingToken.objects.filter(user=user):
+            BlacklistedToken.objects.get_or_create(token=token)
         logger.info(f"Password reset successful for {email}")
         return True
 

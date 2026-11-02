@@ -2,39 +2,36 @@ from unittest.mock import patch
 
 from rest_framework import status
 
-from conftest import get_data, assert_success_response, assert_error_response
+from conftest import get_data, get_results, assert_success_response, assert_error_response
 
 from apps.startups.models import Startup
 
-STARTUP_LIST_URL = "/api/v1/startups/startups/"
+STARTUP_LIST_URL = "/api/v1/startups/"
 
 
 def detail_url(pk):
-    return f"/api/v1/startups/startups/{pk}/"
+    return f"/api/v1/startups/{pk}/"
 
 
 def action_url(pk, action):
-    return f"/api/v1/startups/startups/{pk}/{action}/"
+    return f"/api/v1/startups/{pk}/{action}/"
 
 
 class TestListStartups:
     def test_anonymous_sees_visible_published_startups(self, api_client, startup):
         resp = api_client.get(STARTUP_LIST_URL)
         assert_success_response(resp)
-        data = get_data(resp)
-        assert len(data) >= 1
+        assert startup.id in [item["id"] for item in get_results(resp)]
 
     def test_anonymous_does_not_see_draft_startups(self, api_client, draft_startup):
         resp = api_client.get(STARTUP_LIST_URL)
-        data = get_data(resp)
-        ids = [item["id"] for item in data]
+        ids = [item["id"] for item in get_results(resp)]
         assert draft_startup.id not in ids
 
     def test_authenticated_user_sees_list(self, authenticated_client, startup):
         resp = authenticated_client.get(STARTUP_LIST_URL)
         assert_success_response(resp)
-        data = get_data(resp)
-        assert len(data) >= 1
+        assert startup.id in [item["id"] for item in get_results(resp)]
 
     def test_list_returns_paginated_response(self, api_client, startup):
         resp = api_client.get(STARTUP_LIST_URL)
@@ -150,9 +147,23 @@ class TestPublishStartup:
         resp = authenticated_client.post(action_url(startup.pk, "publish"))
         assert_error_response(resp, status_code=400, error_code="INVALID_STATUS")
 
-    def test_non_owner_cannot_publish(self, founder_client, draft_startup):
+    def test_non_owner_cannot_see_draft_to_publish(self, founder_client, draft_startup):
+        # Other people's drafts are not visible to them at all.
         resp = founder_client.post(action_url(draft_startup.pk, "publish"))
+        assert resp.status_code == status.HTTP_404_NOT_FOUND
+        draft_startup.refresh_from_db()
+        assert draft_startup.status == "draft"
+
+    def test_non_owner_cannot_publish_visible_startup(self, founder_client, startup):
+        resp = founder_client.post(action_url(startup.pk, "publish"))
         assert resp.status_code == status.HTTP_403_FORBIDDEN
+
+    @patch("apps.matching.services.MatchingService.generate_matches_for_startup")
+    def test_publish_generates_matches(self, mock_generate, authenticated_client, draft_startup):
+        resp = authenticated_client.post(action_url(draft_startup.pk, "publish"))
+        assert_success_response(resp)
+        mock_generate.assert_called_once()
+        assert mock_generate.call_args.args[0].pk == draft_startup.pk
 
 
 class TestArchiveStartup:
@@ -160,10 +171,10 @@ class TestArchiveStartup:
         resp = authenticated_client.post(action_url(startup.pk, "archive"))
         assert_success_response(resp)
         startup.refresh_from_db()
-        assert startup.status == "archived"
+        assert startup.status == "closed"
 
     def test_cannot_archive_already_archived(self, authenticated_client, startup):
-        startup.status = "archived"
+        startup.status = "closed"
         startup.save()
         resp = authenticated_client.post(action_url(startup.pk, "archive"))
         assert_error_response(resp, status_code=400, error_code="INVALID_STATUS")
@@ -199,7 +210,17 @@ class TestRecommendedInvestors:
 
     def test_unauthenticated_cannot_access(self, api_client, startup):
         resp = api_client.get(action_url(startup.pk, "recommended_investors"))
-        assert resp.status_code == status.HTTP_200_OK
+        assert resp.status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_non_owner_cannot_access(self, investor_client, startup):
+        resp = investor_client.get(action_url(startup.pk, "recommended_investors"))
+        assert resp.status_code == status.HTTP_403_FORBIDDEN
+
+    @patch("apps.startups.views.MatchingService")
+    def test_admin_can_access(self, mock_matching, admin_client, startup):
+        mock_matching.generate_matches_for_startup.return_value = []
+        resp = admin_client.get(action_url(startup.pk, "recommended_investors"))
+        assert_success_response(resp)
 
     def test_not_found_for_invalid_startup(self, authenticated_client):
         resp = authenticated_client.get(action_url(99999, "recommended_investors"))
@@ -210,8 +231,7 @@ class TestMyStartups:
     def test_returns_owners_startups(self, authenticated_client, startup):
         resp = authenticated_client.get(STARTUP_LIST_URL + "my_startups/")
         assert_success_response(resp)
-        data = get_data(resp)
-        pks = [item["id"] for item in data]
+        pks = [item["id"] for item in get_results(resp)]
         assert startup.pk in pks
 
     def test_unauthenticated_cannot_access(self, api_client):
@@ -223,8 +243,7 @@ class TestMyStartups:
     ):
         Startup.objects.create(owner=founder, name="Theirs", industry="saas", stage="seed")
         resp = authenticated_client.get(STARTUP_LIST_URL + "my_startups/")
-        data = get_data(resp)
-        names = [item["name"] for item in data]
+        names = [item["name"] for item in get_results(resp)]
         assert "Theirs" not in names
 
 
@@ -309,13 +328,34 @@ class TestListDocuments:
         data = get_data(resp)
         assert len(data) == 2
 
-    def test_anonymous_can_list_documents(self, api_client, startup):
+    def test_anonymous_cannot_list_documents(self, api_client, startup):
         from apps.startups.models import StartupDocument
-        StartupDocument.objects.create(startup=startup, name="Public Doc")
+        StartupDocument.objects.create(startup=startup, name="Private Doc")
         resp = api_client.get(action_url(startup.pk, "documents"))
+        assert resp.status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_non_owner_cannot_list_documents(self, investor_client, startup):
+        from apps.startups.models import StartupDocument
+        StartupDocument.objects.create(startup=startup, name="Private Doc")
+        resp = investor_client.get(action_url(startup.pk, "documents"))
+        assert resp.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_admin_can_list_documents(self, admin_client, startup):
+        from apps.startups.models import StartupDocument
+        StartupDocument.objects.create(startup=startup, name="Private Doc")
+        resp = admin_client.get(action_url(startup.pk, "documents"))
         assert_success_response(resp)
-        data = get_data(resp)
-        assert len(data) == 1
+        assert len(get_data(resp)) == 1
+
+    def test_detail_hides_documents_from_non_owner(self, investor_client, startup):
+        resp = investor_client.get(detail_url(startup.pk))
+        assert_success_response(resp)
+        assert "documents" not in get_data(resp)
+
+    def test_detail_shows_documents_to_owner(self, authenticated_client, startup):
+        resp = authenticated_client.get(detail_url(startup.pk))
+        assert_success_response(resp)
+        assert "documents" in get_data(resp)
 
 
 class TestStatistics:
@@ -341,8 +381,7 @@ class TestStatistics:
 class TestPermissions:
     def test_anonymous_only_sees_published(self, api_client, startup, draft_startup):
         resp = api_client.get(STARTUP_LIST_URL)
-        data = get_data(resp)
-        ids = [s["id"] for s in data]
+        ids = [s["id"] for s in get_results(resp)]
         assert startup.id in ids
         assert draft_startup.id not in ids
 

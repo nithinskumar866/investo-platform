@@ -1,4 +1,4 @@
-from rest_framework.permissions import BasePermission, SAFE_METHODS
+from rest_framework.permissions import BasePermission
 
 
 class IsStartupOwner(BasePermission):
@@ -21,9 +21,9 @@ class CanCreateStartup(BasePermission):
 
 
 class CanManageStartup(BasePermission):
+    """Owner or admin only, for reads too: documents and recommended investors are private."""
+
     def has_object_permission(self, request, view, obj):
-        if request.method in SAFE_METHODS:
-            return True
         if request.user.role == "admin":
             return True
         return obj.owner == request.user and request.user.role == "entrepreneur"

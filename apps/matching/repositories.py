@@ -162,7 +162,8 @@ class MatchingRepository:
         match, created = MatchScore.objects.update_or_create(
             investor=investor,
             startup=startup,
-            defaults={
+            defaults={"score": score, "score_breakdown": breakdown},
+            create_defaults={
                 "score": score,
                 "score_breakdown": breakdown,
                 "status": MatchScore.Status.RECOMMENDED,
@@ -187,12 +188,13 @@ class MatchingRepository:
 
     @staticmethod
     def create_interaction_event(user, startup, event_type, metadata=None):
-        return InteractionEvent.objects.create(
+        event, _ = InteractionEvent.objects.get_or_create(
             user=user,
             startup=startup,
             event_type=event_type,
-            metadata=metadata or {},
+            defaults={"metadata": metadata or {}},
         )
+        return event
 
     # ── SavedMatch queries ────────────────────────────────────────
 
