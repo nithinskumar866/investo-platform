@@ -125,7 +125,7 @@ export function InsightPanel({ matchId, score }: { matchId: number; score?: numb
                 <li key={i} className="flex items-start gap-2 text-sm">
                   <ArrowRight className="mt-0.5 h-3 w-3 shrink-0 text-primary" />
                   <div>
-                    <p className="font-medium">{r.action} <Badge variant="outline" className="ml-1 text-[10px] capitalize">{r.priority}</Badge></p>
+                    <div className="font-medium">{r.action} <Badge variant="outline" className="ml-1 text-[10px] capitalize">{r.priority}</Badge></div>
                     <p className="text-muted-foreground">{r.detail}</p>
                   </div>
                 </li>
